@@ -755,6 +755,7 @@ public MENU_CREATEAD_HANDLER(id, vmenu, item)
 			update_all_ads();
 			menu_destroy(vmenu)
 			MENU_CREATEAD(id);
+			unstuckplayer(id);
 			return PLUGIN_HANDLED
 		}
 		case 2:
@@ -781,6 +782,7 @@ public MENU_CREATEAD_HANDLER(id, vmenu, item)
 			update_all_ads();
 			menu_destroy(vmenu)
 			MENU_CREATEAD(id);
+			unstuckplayer(id);
 			return PLUGIN_HANDLED
 		}
 		case 3:
@@ -807,6 +809,7 @@ public MENU_CREATEAD_HANDLER(id, vmenu, item)
 			update_all_ads();
 			menu_destroy(vmenu)
 			MENU_CREATEAD(id);
+			unstuckplayer(id);
 			return PLUGIN_HANDLED
 		}
 		case 4:
@@ -833,6 +836,7 @@ public MENU_CREATEAD_HANDLER(id, vmenu, item)
 			update_all_ads();
 			menu_destroy(vmenu)
 			MENU_CREATEAD(id);
+			unstuckplayer(id);
 			return PLUGIN_HANDLED
 		}
 		case 101:
@@ -1001,6 +1005,13 @@ public plugin_precache()
 	{
 		if (get_ad_disabled(a_cnt) == 0)
 		{
+			new a_map[33];
+			get_ad_map(a_cnt,a_map,charsmax(a_map));
+			if (!equal(a_map,g_sMapName))
+			{
+				a_cnt--;
+				continue;
+			}
 			new a_model[256];
 			get_ad_model(a_cnt,a_model,charsmax(a_model));
 			if (file_exists(a_model))
@@ -1546,4 +1557,125 @@ public precache_get_model(id,str[],len)
 {
 	formatex(static_precache_name,charsmax(static_precache_name),"MDL_%d_precachePath",id)
 	json_object_get_string(g_jAdsList,static_precache_name,str,len);
+}
+
+
+
+/* UNSTUCK STUFF */
+#define TSC_Vector_MA(%1,%2,%3,%4)	(%4[0] = %2[0] * %3 + %1[0], %4[1] = %2[1] * %3 + %1[1])
+
+stock is_player_stuck(id,Float:originF[3])
+{
+	engfunc(EngFunc_TraceHull, originF, originF, 0, (pev(id, pev_flags) & FL_DUCKING) ? HULL_HEAD : HULL_HUMAN, id, 0)
+	
+	if (get_tr2(0, TR_StartSolid) || get_tr2(0, TR_AllSolid) || !get_tr2(0, TR_InOpen))
+		return true
+	
+	return false
+}
+
+
+stock is_hull_vacant(Float:origin[3], hull)
+{
+	engfunc(EngFunc_TraceHull, origin, origin, DONT_IGNORE_MONSTERS, hull, 0, 0)
+	
+	if (!get_tr2(0, TR_StartSolid) && !get_tr2(0, TR_AllSolid) && get_tr2(0, TR_InOpen))
+		return true
+	
+	return false
+}
+
+public unstuckplayer(id)
+{
+	static Float:Origin[3]
+	pev(id, pev_origin, Origin)
+	static iHull, iSpawnPoint, i
+	iHull = (pev(id, pev_flags) & FL_DUCKING) ? HULL_HEAD : HULL_HUMAN
+	
+	// fast unstuck 
+	if(is_player_stuck(id,Origin))
+	{
+		Origin[2] -= 64.0
+	}
+	else
+	{
+		engfunc(EngFunc_SetOrigin, id, Origin)	
+		return;
+	}
+	if(is_player_stuck(id,Origin))
+	{
+		Origin[2] += 128.0
+	}
+	else
+	{
+		engfunc(EngFunc_SetOrigin, id, Origin)	
+		return;
+	}
+	
+	// slow unstuck 
+	if(is_player_stuck(id,Origin))
+	{
+		static const Float:RANDOM_OWN_PLACE[][3] =
+		{
+			{ -96.5,   0.0, 0.0 },
+			{  96.5,   0.0, 0.0 },
+			{   0.0, -96.5, 0.0 },
+			{   0.0,  96.5, 0.0 },
+			{ -96.5, -96.5, 0.0 },
+			{ -96.5,  96.5, 0.0 },
+			{  96.5,  96.5, 0.0 },
+			{  96.5, -96.5, 0.0 }
+		}
+		
+		new Float:flOrigin[3], Float:flOriginFinal[3], iSize
+		pev(id, pev_origin, flOrigin)
+		iSize = sizeof(RANDOM_OWN_PLACE)
+		
+		iSpawnPoint = random_num(0, iSize - 1)
+		
+		for (i = iSpawnPoint + 1; /*no condition*/; i++)
+		{
+			if (i >= iSize)
+				i = 0
+			
+			flOriginFinal[0] = flOrigin[0] + RANDOM_OWN_PLACE[i][0]
+			flOriginFinal[1] = flOrigin[1] + RANDOM_OWN_PLACE[i][1]
+			flOriginFinal[2] = flOrigin[2]
+			
+			engfunc(EngFunc_TraceLine, flOrigin, flOriginFinal, IGNORE_MONSTERS, id, 0)
+			
+			new Float:flFraction
+			get_tr2(0, TR_flFraction, flFraction)
+			if (flFraction < 1.0)
+			{
+				new Float:vTraceEnd[3], Float:vNormal[3]
+				get_tr2(0, TR_vecEndPos, vTraceEnd)
+				get_tr2(0, TR_vecPlaneNormal, vNormal)
+				
+				TSC_Vector_MA(vTraceEnd, vNormal, 32.5, flOriginFinal)
+			}
+			flOriginFinal[2] -= 35.0
+			
+			new iZ = 0
+			do
+			{
+				if (is_hull_vacant(flOriginFinal, iHull))
+				{
+					i = iSpawnPoint
+					engfunc(EngFunc_SetOrigin, id, flOriginFinal)
+					break
+				}
+				
+				flOriginFinal[2] += 40.0
+			}
+			while (++iZ <= 2)
+			
+			if (i == iSpawnPoint)
+				break
+		}
+	}
+	else
+	{
+		engfunc(EngFunc_SetOrigin, id, Origin)	
+	}
 }
