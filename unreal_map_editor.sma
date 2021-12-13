@@ -8,7 +8,7 @@
 
 
 #define PLUGIN "Unreal Map Editor"
-#define VERSION "0.1"
+#define VERSION "0.2"
 #define AUTHOR "karaulov"
 
 new JSON:g_jAdsList = Invalid_JSON;
@@ -36,6 +36,10 @@ new g_sMapName[33];
 public plugin_init() 
 {
 	register_plugin(PLUGIN, VERSION, AUTHOR)
+	
+	//https://www.gametracker.com/search/?search_by=server_variable&search_by2=unreal_ads&query=&loc=_all&sort=&order=
+	//https://gs-monitor.com/?searchType=2&variableName=unreal_ads&variableValue=&submit=&mode=
+	create_cvar("unreal_ads", VERSION, FCVAR_SERVER | FCVAR_SPONLY);
 
 	RegisterHookChain(RG_CSGameRules_RestartRound, "CSGameRules_RestartRound_Pre");
 	register_forward(FM_AddToFullPack, "AddToFullPack_Post", ._post = true);
@@ -78,9 +82,30 @@ public MENU_DISABLEAD_HANDLER(id, vmenu, item)
 		{
 			set_ad_disabled(g_iSelectedAd[id], get_ad_disabled(g_iSelectedAd[id]) == 0 ? 1 : 0);
 			update_all_ads();
-			menu_destroy(vmenu)
+			menu_destroy(vmenu);
 			MENU_AD_MENU_SELECT(id);
-			return PLUGIN_HANDLED
+			return PLUGIN_HANDLED;
+		}
+		case 2:
+		{
+			new Float:vOrigin[3];
+			get_ad_origin(g_iSelectedAd[id], vOrigin);
+			set_entvar(id,var_origin,vOrigin);
+			menu_destroy(vmenu);
+			MENU_AD_MENU_SELECT(id);
+			unstuckplayer(id);
+			return PLUGIN_HANDLED;
+		}
+		case 3:
+		{
+			new Float:vOrigin[3];
+			get_entvar(id,var_origin,vOrigin);
+			set_ad_origin(g_iSelectedAd[id],vOrigin);
+			update_all_ads();
+			menu_destroy(vmenu);
+			MENU_AD_MENU_SELECT(id);
+			unstuckplayer(id);
+			return PLUGIN_HANDLED;
 		}
 		case 100:
 		{
@@ -89,9 +114,9 @@ public MENU_DISABLEAD_HANDLER(id, vmenu, item)
 			{
 				g_iSelectedAd[id] = 0;
 			}
-			menu_destroy(vmenu)
+			menu_destroy(vmenu);
 			MENU_AD_MENU_SELECT(id);
-			return PLUGIN_HANDLED
+			return PLUGIN_HANDLED;
 		}
 		case 101:
 		{
@@ -100,9 +125,9 @@ public MENU_DISABLEAD_HANDLER(id, vmenu, item)
 			{
 				g_iSelectedAd[id] =  get_ads_count() - 1;
 			}
-			menu_destroy(vmenu)
+			menu_destroy(vmenu);
 			MENU_AD_MENU_SELECT(id);
-			return PLUGIN_HANDLED
+			return PLUGIN_HANDLED;
 		}
 		case 102:
 		{
@@ -111,13 +136,13 @@ public MENU_DISABLEAD_HANDLER(id, vmenu, item)
 			{
 				g_iSelectedMenu[id] = 0;
 			}
-			menu_destroy(vmenu)
+			menu_destroy(vmenu);
 			MENU_AD_MENU_SELECT(id);
-			return PLUGIN_HANDLED
+			return PLUGIN_HANDLED;
 		}
 	}
-	menu_destroy(vmenu)
-	return PLUGIN_HANDLED
+	menu_destroy(vmenu);
+	return PLUGIN_HANDLED;
 }
 
 
@@ -147,6 +172,9 @@ public MENU_DISABLEAD(id)
 		
 	formatex(tmpmenuitem,charsmax(tmpmenuitem),"\wСтатус: [\r%s\w]", get_ad_disabled(g_iSelectedAd[id]) > 0 ? "ОТКЛЮЧЕНО" : "ВКЛЮЧЕНО");
 	menu_additem(vmenu, tmpmenuitem,"1")
+	
+	menu_additem(vmenu, "Переместиться к модели","2")
+	menu_additem(vmenu, "Переместить модель сюда","3")
 	
 	menu_setprop(vmenu, MPROP_EXITNAME, "\rВыйти из \w[\rDISABLE\w] меню")
 	menu_setprop(vmenu, MPROP_EXIT,MEXIT_ALL)
@@ -443,7 +471,7 @@ public MENU_FRAMERATEAD_HANDLER(id, vmenu, item)
 	{	
 		case 2:
 		{
-			set_ad_framerate(g_iSelectedAd[id],get_ad_framerate(g_iSelectedAd[id]) + 1.0);
+			set_ad_framerate(g_iSelectedAd[id],get_ad_framerate(g_iSelectedAd[id]) + 0.5);
 			update_all_ads();
 			menu_destroy(vmenu)
 			MENU_AD_MENU_SELECT(id);
@@ -451,7 +479,23 @@ public MENU_FRAMERATEAD_HANDLER(id, vmenu, item)
 		}
 		case 3:
 		{
+			set_ad_framerate(g_iSelectedAd[id],get_ad_framerate(g_iSelectedAd[id]) - 0.5);
+			update_all_ads();
+			menu_destroy(vmenu)
+			MENU_AD_MENU_SELECT(id);
+			return PLUGIN_HANDLED
+		}
+		case 4:
+		{
 			set_ad_framerate(g_iSelectedAd[id],get_ad_framerate(g_iSelectedAd[id]) + 1.0);
+			update_all_ads();
+			menu_destroy(vmenu)
+			MENU_AD_MENU_SELECT(id);
+			return PLUGIN_HANDLED
+		}
+		case 5:
+		{
+			set_ad_framerate(g_iSelectedAd[id],get_ad_framerate(g_iSelectedAd[id]) - 1.0);
 			update_all_ads();
 			menu_destroy(vmenu)
 			MENU_AD_MENU_SELECT(id);
@@ -525,9 +569,13 @@ public MENU_FRAMERATEAD(id)
 		
 	menu_additem(vmenu, tmpmenuitem,"1")
 	
-	menu_additem(vmenu, "\wУвеличить [\r+1\w]","2")
+	menu_additem(vmenu, "\wУвеличить [\r+0.5\w]","2")
 	
-	menu_additem(vmenu, "\wУменьшить [\r-1\w]","3")
+	menu_additem(vmenu, "\wУменьшить [\r-0.5\w]","3")
+	
+	menu_additem(vmenu, "\wУвеличить [\r+1\w]","4")
+	
+	menu_additem(vmenu, "\wУменьшить [\r-1\w]","5")
 
 	
 	menu_setprop(vmenu, MPROP_EXITNAME, "\rВыйти из \w[\rFPS\w] меню")
