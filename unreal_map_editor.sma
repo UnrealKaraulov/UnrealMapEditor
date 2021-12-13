@@ -8,7 +8,7 @@
 
 
 #define PLUGIN "Unreal Map Editor"
-#define VERSION "0.2"
+#define VERSION "0.3"
 #define AUTHOR "karaulov"
 
 new JSON:g_jAdsList = Invalid_JSON;
@@ -1053,13 +1053,6 @@ public plugin_precache()
 	{
 		if (get_ad_disabled(a_cnt) == 0)
 		{
-			new a_map[33];
-			get_ad_map(a_cnt,a_map,charsmax(a_map));
-			if (!equal(a_map,g_sMapName))
-			{
-				a_cnt--;
-				continue;
-			}
 			new a_model[256];
 			get_ad_model(a_cnt,a_model,charsmax(a_model));
 			if (file_exists(a_model))
@@ -1100,6 +1093,9 @@ public plugin_precache()
 		while ( next_file( handleDir, fileName, charsmax( fileName ) ) );
 		close_dir( handleDir );
 	}
+	
+	server_print("[%s] Loaded %d objects and %d models.",PLUGIN,get_ads_count(),g_iPrecachedModels);
+	log_amx("[%s] Loaded %d objects and %d models.",PLUGIN,get_ads_count(),g_iPrecachedModels);
 }
 
 
@@ -1359,7 +1355,9 @@ public create_all_ads()
 	new a_cnt = get_ads_count() - 1;
 	for(;a_cnt >= 0;)
 	{
-		if (get_ad_disabled(a_cnt) == 0)
+		new a_map[64];
+		get_ad_map(a_cnt,a_map,charsmax(a_map));
+		if (get_ad_disabled(a_cnt) == 0 && equal(a_map,g_sMapName))
 		{
 			create_one_ad(a_cnt)
 		}
@@ -1409,7 +1407,7 @@ public set_ad_model(id, str[])
 	json_object_set_string(g_jAdsList,static_ad_model,str);
 }
 
-new static_ad_map[256];
+new static_ad_map[64];
 public get_ad_map(id, str[],len)
 {
 	formatex(static_ad_map,charsmax(static_ad_map),"%d_MAP",id)
