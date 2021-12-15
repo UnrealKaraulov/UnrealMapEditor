@@ -8,7 +8,7 @@
 
 
 #define PLUGIN "Unreal Map Editor"
-#define VERSION "0.4"
+#define VERSION "0.5"
 #define AUTHOR "karaulov"
 
 
@@ -52,6 +52,7 @@ public plugin_init()
 
 	RegisterHookChain(RG_CSGameRules_RestartRound, "CSGameRules_RestartRound_Pre");
 	register_forward(FM_AddToFullPack, "AddToFullPack_Post", ._post = true);
+	RegisterHookChain(RG_CBasePlayer_Spawn, "CBasePlayer_Spawn_Post", true);
 	
 	set_task_ex(1.0, "cache_player_teams", .flags = SetTask_Repeat);
 	
@@ -63,9 +64,17 @@ public plugin_init()
 	register_clcmd("test", "test")
 	register_clcmd("say /test", "test")
 	
-	get_mapname(g_sMapName,charsmax(g_sMapName));
-	
 	g_fMapStartTime = get_gametime();
+	
+	update_all_ads(0);
+}
+
+public CBasePlayer_Spawn_Post(const id) 
+{
+	if (is_user_alive(id))
+	{
+		unstuckplayer(id);
+	}
 }
 
 public test(id)
@@ -77,11 +86,50 @@ new g_iSelectedAd[33] = {0,...};
 
 new g_iSelectedMenu[33] = {0,...};
 
+public get_ads_count_map()
+{
+	if (get_ads_count() == 0)
+		return 0;
+	new startid = 0;
+	new endid = get_ads_count();
+	new ad_mapname[64];
+	new cnt = 0;
+	while(startid < endid)
+	{
+		get_ad_map(startid,ad_mapname,charsmax(ad_mapname));
+		if (equal(ad_mapname,g_sMapName))
+		{
+			cnt++;
+		}
+		startid++;
+	}
+	return cnt;
+}
 
+public search_next_ad(id)
+{
+	g_iSelectedAd[id]++;
+	if (g_iSelectedAd[id] >= get_ads_count())
+	{
+		g_iSelectedAd[id] = 0;
+	}
+	new tmpMap[64];
+	get_ad_map(g_iSelectedAd[id],tmpMap,charsmax(tmpMap));
+	while (!equal(tmpMap,g_sMapName))
+	{
+		g_iSelectedAd[id]++;
+		if (g_iSelectedAd[id] >= get_ads_count())
+		{
+			g_iSelectedAd[id] = 0;
+			break;
+		}
+		get_ad_map(g_iSelectedAd[id],tmpMap,charsmax(tmpMap));
+	}
+}
 
 public MENU_DISABLEAD_HANDLER(id, vmenu, item) 
 {
-	if(item == MENU_EXIT || !is_user_connected(id) || !is_user_alive(id)) 
+	if(item == MENU_EXIT || !is_user_connected(id)) 
 	{
 		menu_destroy(vmenu)
 		return PLUGIN_HANDLED
@@ -123,22 +171,14 @@ public MENU_DISABLEAD_HANDLER(id, vmenu, item)
 		}
 		case 100:
 		{
-			g_iSelectedAd[id]++;
-			if (g_iSelectedAd[id] < 0 || g_iSelectedAd[id] >=  get_ads_count())
-			{
-				g_iSelectedAd[id] = 0;
-			}
+			search_next_ad(id);
 			menu_destroy(vmenu);
 			MENU_AD_MENU_SELECT(id);
 			return PLUGIN_HANDLED;
 		}
 		case 101:
 		{
-			g_iSelectedAd[id]--;
-			if (g_iSelectedAd[id] < 0 || g_iSelectedAd[id] >=  get_ads_count())
-			{
-				g_iSelectedAd[id] =  get_ads_count() - 1;
-			}
+			search_next_ad(id);
 			menu_destroy(vmenu);
 			MENU_AD_MENU_SELECT(id);
 			return PLUGIN_HANDLED;
@@ -162,7 +202,7 @@ public MENU_DISABLEAD_HANDLER(id, vmenu, item)
 
 public MENU_DISABLEAD(id)
 {
-	if (get_ads_count() == 0)
+	if (get_ads_count_map() == 0)
 	{
 		client_print_color(id,print_team_red,"НЕТ ДОСТУПНОЙ РЕКЛАМЫ");
 		return ;
@@ -200,7 +240,7 @@ public MENU_DISABLEAD(id)
 
 public MENU_TEAMVISIBLE_HANDLER(id, vmenu, item) 
 {
-	if(item == MENU_EXIT || !is_user_connected(id) || !is_user_alive(id)) 
+	if(item == MENU_EXIT || !is_user_connected(id)) 
 	{
 		menu_destroy(vmenu)
 		return PLUGIN_HANDLED
@@ -238,22 +278,14 @@ public MENU_TEAMVISIBLE_HANDLER(id, vmenu, item)
 		}
 		case 100:
 		{
-			g_iSelectedAd[id]++;
-			if (g_iSelectedAd[id] < 0 || g_iSelectedAd[id] >=  get_ads_count())
-			{
-				g_iSelectedAd[id] = 0;
-			}
+			search_next_ad(id);
 			menu_destroy(vmenu)
 			MENU_AD_MENU_SELECT(id);
 			return PLUGIN_HANDLED
 		}
 		case 101:
 		{
-			g_iSelectedAd[id]--;
-			if (g_iSelectedAd[id] < 0 || g_iSelectedAd[id] >=  get_ads_count())
-			{
-				g_iSelectedAd[id] =  get_ads_count() - 1;
-			}
+			search_next_ad(id);
 			menu_destroy(vmenu)
 			MENU_AD_MENU_SELECT(id);
 			return PLUGIN_HANDLED
@@ -277,7 +309,7 @@ public MENU_TEAMVISIBLE_HANDLER(id, vmenu, item)
 
 public MENU_TEAMVISIBLE(id)
 {
-	if (get_ads_count() == 0)
+	if (get_ads_count_map() == 0)
 	{
 		client_print_color(id,print_team_red,"НЕТ ДОСТУПНОЙ РЕКЛАМЫ");
 		return ;
@@ -320,7 +352,7 @@ new g_iSelectedCoord[33] = {0,...};
 
 public MENU_MOVEAD_HANDLER(id, vmenu, item) 
 {
-	if(item == MENU_EXIT || !is_user_connected(id) || !is_user_alive(id)) 
+	if(item == MENU_EXIT || !is_user_connected(id)) 
 	{
 		menu_destroy(vmenu)
 		return PLUGIN_HANDLED
@@ -387,22 +419,14 @@ public MENU_MOVEAD_HANDLER(id, vmenu, item)
 		}
 		case 100:
 		{
-			g_iSelectedAd[id]++;
-			if (g_iSelectedAd[id] < 0 || g_iSelectedAd[id] >=  get_ads_count())
-			{
-				g_iSelectedAd[id] = 0;
-			}
+			search_next_ad(id);
 			menu_destroy(vmenu)
 			MENU_AD_MENU_SELECT(id);
 			return PLUGIN_HANDLED
 		}
 		case 101:
 		{
-			g_iSelectedAd[id]--;
-			if (g_iSelectedAd[id] < 0 || g_iSelectedAd[id] >=  get_ads_count())
-			{
-				g_iSelectedAd[id] =  get_ads_count() - 1;
-			}
+			search_next_ad(id);
 			menu_destroy(vmenu)
 			MENU_AD_MENU_SELECT(id);
 			return PLUGIN_HANDLED
@@ -425,7 +449,7 @@ public MENU_MOVEAD_HANDLER(id, vmenu, item)
 
 public MENU_MOVEAD(id)
 {
-	if (get_ads_count() == 0)
+	if (get_ads_count_map() == 0)
 	{
 		client_print_color(id,print_team_red,"НЕТ ДОСТУПНОЙ РЕКЛАМЫ");
 		return ;
@@ -471,7 +495,7 @@ public MENU_MOVEAD(id)
 
 public MENU_FRAMERATEAD_HANDLER(id, vmenu, item) 
 {
-	if(item == MENU_EXIT || !is_user_connected(id) || !is_user_alive(id)) 
+	if(item == MENU_EXIT || !is_user_connected(id)) 
 	{
 		menu_destroy(vmenu)
 		return PLUGIN_HANDLED
@@ -523,22 +547,14 @@ public MENU_FRAMERATEAD_HANDLER(id, vmenu, item)
 		}
 		case 100:
 		{
-			g_iSelectedAd[id]++;
-			if (g_iSelectedAd[id] < 0 || g_iSelectedAd[id] >=  get_ads_count())
-			{
-				g_iSelectedAd[id] = 0;
-			}
+			search_next_ad(id);
 			menu_destroy(vmenu)
 			MENU_AD_MENU_SELECT(id);
 			return PLUGIN_HANDLED
 		}
 		case 101:
 		{
-			g_iSelectedAd[id]--;
-			if (g_iSelectedAd[id] < 0 || g_iSelectedAd[id] >=  get_ads_count())
-			{
-				g_iSelectedAd[id] =  get_ads_count() - 1;
-			}
+			search_next_ad(id);
 			menu_destroy(vmenu)
 			MENU_AD_MENU_SELECT(id);
 			return PLUGIN_HANDLED
@@ -562,7 +578,7 @@ public MENU_FRAMERATEAD_HANDLER(id, vmenu, item)
 
 public MENU_FRAMERATEAD(id)
 {
-	if (get_ads_count() == 0)
+	if (get_ads_count_map() == 0)
 	{
 		client_print_color(id,print_team_red,"НЕТ ДОСТУПНОЙ РЕКЛАМЫ");
 		return ;
@@ -607,7 +623,7 @@ public MENU_FRAMERATEAD(id)
 
 public MENU_SEQNUMAD_HANDLER(id, vmenu, item) 
 {
-	if(item == MENU_EXIT || !is_user_connected(id) || !is_user_alive(id)) 
+	if(item == MENU_EXIT || !is_user_connected(id)) 
 	{
 		menu_destroy(vmenu)
 		return PLUGIN_HANDLED
@@ -643,22 +659,14 @@ public MENU_SEQNUMAD_HANDLER(id, vmenu, item)
 		}
 		case 100:
 		{
-			g_iSelectedAd[id]++;
-			if (g_iSelectedAd[id] < 0 || g_iSelectedAd[id] >=  get_ads_count())
-			{
-				g_iSelectedAd[id] = 0;
-			}
+			search_next_ad(id);
 			menu_destroy(vmenu)
 			MENU_AD_MENU_SELECT(id);
 			return PLUGIN_HANDLED
 		}
 		case 101:
 		{
-			g_iSelectedAd[id]--;
-			if (g_iSelectedAd[id] < 0 || g_iSelectedAd[id] >=  get_ads_count())
-			{
-				g_iSelectedAd[id] =  get_ads_count() - 1;
-			}
+			search_next_ad(id);
 			menu_destroy(vmenu)
 			MENU_AD_MENU_SELECT(id);
 			return PLUGIN_HANDLED
@@ -682,7 +690,7 @@ public MENU_SEQNUMAD_HANDLER(id, vmenu, item)
 
 public MENU_SEQNUMAD(id)
 {
-	if (get_ads_count() == 0)
+	if (get_ads_count_map() == 0)
 	{
 		client_print_color(id,print_team_red,"НЕТ ДОСТУПНОЙ РЕКЛАМЫ");
 		return ;
@@ -734,7 +742,7 @@ public MENU_SEQNUMAD(id)
 
 public MENU_ANGLEAD_HANDLER(id, vmenu, item) 
 {
-	if(item == MENU_EXIT || !is_user_connected(id) || !is_user_alive(id)) 
+	if(item == MENU_EXIT || !is_user_connected(id)) 
 	{
 		menu_destroy(vmenu)
 		return PLUGIN_HANDLED
@@ -801,22 +809,14 @@ public MENU_ANGLEAD_HANDLER(id, vmenu, item)
 		}
 		case 100:
 		{
-			g_iSelectedAd[id]++;
-			if (g_iSelectedAd[id] < 0 || g_iSelectedAd[id] >=  get_ads_count())
-			{
-				g_iSelectedAd[id] = 0;
-			}
+			search_next_ad(id);
 			menu_destroy(vmenu)
 			MENU_AD_MENU_SELECT(id);
 			return PLUGIN_HANDLED
 		}
 		case 101:
 		{
-			g_iSelectedAd[id]--;
-			if (g_iSelectedAd[id] < 0 || g_iSelectedAd[id] >=  get_ads_count())
-			{
-				g_iSelectedAd[id] =  get_ads_count() - 1;
-			}
+			search_next_ad(id);
 			menu_destroy(vmenu)
 			MENU_AD_MENU_SELECT(id);
 			return PLUGIN_HANDLED
@@ -839,7 +839,7 @@ public MENU_ANGLEAD_HANDLER(id, vmenu, item)
 
 public MENU_ANGLEAD(id)
 {
-	if (get_ads_count() == 0)
+	if (get_ads_count_map() == 0)
 	{
 		client_print_color(id,print_team_red,"НЕТ ДОСТУПНОЙ РЕКЛАМЫ");
 		return ;
@@ -883,7 +883,7 @@ public MENU_ANGLEAD(id)
 
 public MENU_ROTATEAD_SPEED_HANDLER(id, vmenu, item) 
 {
-	if(item == MENU_EXIT || !is_user_connected(id) || !is_user_alive(id)) 
+	if(item == MENU_EXIT || !is_user_connected(id)) 
 	{
 		menu_destroy(vmenu)
 		return PLUGIN_HANDLED
@@ -946,22 +946,14 @@ public MENU_ROTATEAD_SPEED_HANDLER(id, vmenu, item)
 		}
 		case 100:
 		{
-			g_iSelectedAd[id]++;
-			if (g_iSelectedAd[id] < 0 || g_iSelectedAd[id] >=  get_ads_count())
-			{
-				g_iSelectedAd[id] = 0;
-			}
+			search_next_ad(id);
 			menu_destroy(vmenu)
 			MENU_AD_MENU_SELECT(id);
 			return PLUGIN_HANDLED
 		}
 		case 101:
 		{
-			g_iSelectedAd[id]--;
-			if (g_iSelectedAd[id] < 0 || g_iSelectedAd[id] >=  get_ads_count())
-			{
-				g_iSelectedAd[id] =  get_ads_count() - 1;
-			}
+			search_next_ad(id);
 			menu_destroy(vmenu)
 			MENU_AD_MENU_SELECT(id);
 			return PLUGIN_HANDLED
@@ -984,7 +976,7 @@ public MENU_ROTATEAD_SPEED_HANDLER(id, vmenu, item)
 
 public MENU_ROTATEAD_SPEED(id)
 {
-	if (get_ads_count() == 0)
+	if (get_ads_count_map() == 0)
 	{
 		client_print_color(id,print_team_red,"НЕТ ДОСТУПНОЙ РЕКЛАМЫ");
 		return ;
@@ -1037,7 +1029,7 @@ public MENU_ROTATEAD_SPEED(id)
 
 public MENU_MOVEAD_SPEED_HANDLER(id, vmenu, item) 
 {
-	if(item == MENU_EXIT || !is_user_connected(id) || !is_user_alive(id)) 
+	if(item == MENU_EXIT || !is_user_connected(id)) 
 	{
 		menu_destroy(vmenu)
 		return PLUGIN_HANDLED
@@ -1111,22 +1103,14 @@ public MENU_MOVEAD_SPEED_HANDLER(id, vmenu, item)
 		}
 		case 100:
 		{
-			g_iSelectedAd[id]++;
-			if (g_iSelectedAd[id] < 0 || g_iSelectedAd[id] >=  get_ads_count())
-			{
-				g_iSelectedAd[id] = 0;
-			}
+			search_next_ad(id);
 			menu_destroy(vmenu)
 			MENU_AD_MENU_SELECT(id);
 			return PLUGIN_HANDLED
 		}
 		case 101:
 		{
-			g_iSelectedAd[id]--;
-			if (g_iSelectedAd[id] < 0 || g_iSelectedAd[id] >=  get_ads_count())
-			{
-				g_iSelectedAd[id] =  get_ads_count() - 1;
-			}
+			search_next_ad(id);
 			menu_destroy(vmenu)
 			MENU_AD_MENU_SELECT(id);
 			return PLUGIN_HANDLED
@@ -1149,7 +1133,7 @@ public MENU_MOVEAD_SPEED_HANDLER(id, vmenu, item)
 
 public MENU_MOVEAD_SPEED(id)
 {
-	if (get_ads_count() == 0)
+	if (get_ads_count_map() == 0)
 	{
 		client_print_color(id,print_team_red,"НЕТ ДОСТУПНОЙ РЕКЛАМЫ");
 		return ;
@@ -1252,7 +1236,7 @@ public MENU_AD_MENU_SELECT(id)
 
 public MENU_CREATEAD_HANDLER(id, vmenu, item) 
 {
-	if(item == MENU_EXIT || !is_user_connected(id) || !is_user_alive(id)) 
+	if(item == MENU_EXIT || !is_user_connected(id)) 
 	{
 		menu_destroy(vmenu)
 		return PLUGIN_HANDLED
@@ -1271,6 +1255,7 @@ public MENU_CREATEAD_HANDLER(id, vmenu, item)
 			new ads = get_ads_count();
 			new Float:vOrigin[3];
 			get_entvar(id,var_origin,vOrigin);
+			g_iSelectedAd[id] = get_ads_count();
 			set_ads_count(get_ads_count() + 1);
 			set_ad_model(ads,tmpmodelpath);
 			set_ad_type(ads,"SPRITE");
@@ -1301,6 +1286,7 @@ public MENU_CREATEAD_HANDLER(id, vmenu, item)
 			new ads = get_ads_count();
 			new Float:vOrigin[3];
 			get_entvar(id,var_origin,vOrigin);
+			g_iSelectedAd[id] = get_ads_count();
 			set_ads_count(get_ads_count() + 1);
 			set_ad_model(ads,tmpmodelpath);
 			set_ad_type(ads,"MODEL");
@@ -1331,6 +1317,7 @@ public MENU_CREATEAD_HANDLER(id, vmenu, item)
 			new ads = get_ads_count();
 			new Float:vOrigin[3];
 			get_entvar(id,var_origin,vOrigin);
+			g_iSelectedAd[id] = get_ads_count();
 			set_ads_count(get_ads_count() + 1);
 			set_ad_model(ads,tmpmodelpath);
 			set_ad_type(ads,"BSPMODEL_SOLID");
@@ -1361,6 +1348,7 @@ public MENU_CREATEAD_HANDLER(id, vmenu, item)
 			new ads = get_ads_count();
 			new Float:vOrigin[3];
 			get_entvar(id,var_origin,vOrigin);
+			g_iSelectedAd[id] = get_ads_count();
 			set_ads_count(get_ads_count() + 1);
 			set_ad_model(ads,tmpmodelpath);
 			set_ad_type(ads,"BSPMODEL_LADDER");
@@ -1507,7 +1495,7 @@ public CSGameRules_RestartRound_Pre()
 public plugin_end()
 {
 	get_configsdir(g_sAdsPath, charsmax(g_sAdsPath));
-	add(g_sAdsPath, charsmax(g_sAdsPath), "/unreal_mdls.json");
+	add(g_sAdsPath, charsmax(g_sAdsPath), "/unreal_map_mdls.json");
 	json_serial_to_file(g_jAdsList,g_sAdsPath,true);
 	json_free(g_jAdsList);
 }
@@ -1515,13 +1503,15 @@ public plugin_end()
 public plugin_precache()
 {
 	get_configsdir(g_sAdsPath, charsmax(g_sAdsPath));
-	add(g_sAdsPath, charsmax(g_sAdsPath), "/unreal_mdls.json");
+	add(g_sAdsPath, charsmax(g_sAdsPath), "/unreal_map_mdls.json");
 	
 	g_jAdsList = json_parse(g_sAdsPath,true);
 	if (g_jAdsList == Invalid_JSON)
 	{
 		g_jAdsList = json_init_object();
 	}
+	
+	rh_get_mapname(g_sMapName, charsmax(g_sMapName), MNT_TRUE);
 	
 	/*
 	TESTS STUFF
@@ -1547,15 +1537,27 @@ public plugin_precache()
 	
 	// Precache all models used in ads
 	new a_cnt = get_ads_count() - 1;
+	
+	new a_curmap_cnt = 0;
 	for(;a_cnt >= 0;)
 	{
 		if (get_ad_disabled(a_cnt) == 0)
 		{
 			new a_model[256];
 			get_ad_model(a_cnt,a_model,charsmax(a_model));
+			new a_map[64];
+			get_ad_map(a_cnt,a_map,charsmax(a_map));
 			if (file_exists(a_model))
-			{
-				set_ad_precache(a_cnt,add_precache_model(a_model));
+			{	
+				if (equal(a_map,g_sMapName))
+				{
+					a_curmap_cnt++;
+					set_ad_precache(a_cnt,add_precache_model(a_model));
+				}
+				else 
+				{
+					set_ad_precache(a_cnt, -1)
+				}
 			}
 			else 
 			{
@@ -1563,13 +1565,19 @@ public plugin_precache()
 			}
 		}
 		else 
+		{
 			set_ad_precache(a_cnt, -1)
+		}
 		a_cnt--;
 	}
 	
-	// Precache all models from directory models/unreal_mdls/
+	// Precache all models from directory models/unreal_mdls/global/
+	new mapPathModel[256];
+	formatex(mapPathModel,charsmax(mapPathModel),"%s/global",UNREAL_MDLS_DIRECTORY);
+	if (!dir_exists(mapPathModel))
+		mkdir(mapPathModel);
 	new fileName[ 64 ];
-	new handleDir = open_dir( UNREAL_MDLS_DIRECTORY, fileName, charsmax( fileName ) );
+	new handleDir = open_dir( mapPathModel, fileName, charsmax( fileName ) );
 	if ( handleDir )
 	{
 		do
@@ -1585,15 +1593,41 @@ public plugin_precache()
 				continue;
 			}
 			new a_model[256];
-			formatex(a_model,charsmax(a_model),"models/unreal_mdls/%s",fileName);
+			formatex(a_model,charsmax(a_model),"%s/global/%s",UNREAL_MDLS_DIRECTORY,fileName);
+			add_precache_model(a_model);
+		}   
+		while ( next_file( handleDir, fileName, charsmax( fileName ) ) );
+		close_dir( handleDir );
+	}
+	// Precache all models from directory models/unreal_mdls/mapname/
+
+	formatex(mapPathModel,charsmax(mapPathModel),"%s/%s",UNREAL_MDLS_DIRECTORY,g_sMapName);
+	if (!dir_exists(mapPathModel))
+		mkdir(mapPathModel);
+	handleDir = open_dir( mapPathModel, fileName, charsmax( fileName ) );
+	if ( handleDir )
+	{
+		do
+		{
+			if(containi(fileName, ".mdl") == -1 && containi(fileName, ".spr") == -1
+				&& containi(fileName, ".bsp") == -1)
+			{
+				continue;
+			}
+			
+			if(containi(fileName, ".ztmp") != -1)
+			{
+				continue;
+			}
+			new a_model[256];
+			formatex(a_model,charsmax(a_model),"%s/%s/%s",UNREAL_MDLS_DIRECTORY,g_sMapName,fileName);
 			add_precache_model(a_model);
 		}   
 		while ( next_file( handleDir, fileName, charsmax( fileName ) ) );
 		close_dir( handleDir );
 	}
 	
-	server_print("[%s] Loaded %d objects and %d models.",PLUGIN,get_ads_count(),g_iPrecachedModels);
-	log_amx("[%s] Loaded %d objects and %d models.",PLUGIN,get_ads_count(),g_iPrecachedModels);
+	log_amx("[%s] Loaded %d objects total, %d for current map, and %d models.",PLUGIN,get_ads_count(),a_curmap_cnt,g_iPrecachedModels);
 }
 
 
@@ -1654,7 +1688,8 @@ public create_one_ad(id)
 	set_entvar( pEnt, var_model, sModelPath);
 	set_entvar( pEnt, var_modelindex, pPrecacheId);
 	set_entvar( pEnt, var_framerate, get_ad_framerate(id));
-
+	set_entvar( pEnt, var_v_angle,Float:{0.0,90.0,0.0});
+	
 	new Float:vUserData[3]; 
 	
 	vUserData[0] = get_ad_lifetime(id);
@@ -1672,17 +1707,17 @@ public create_one_ad(id)
 	set_entvar( pEnt, var_vuser3, vUserData);
 	
 	
+	set_entvar( pEnt, var_movetype, MOVETYPE_FLYMISSILE);
+	
 	if (equal(sModelType,"SPRITE"))
 	{
 		set_entvar( pEnt, var_solid, SOLID_NOT);
-		set_entvar( pEnt, var_movetype, MOVETYPE_FLY);
 		rg_set_ent_rendering(pEnt, kRenderFxNoDissipation, Float:{255.0,255.0,255.0}, kRenderTransAdd, 255.0);
 		SetThink( pEnt, "AD_THINK_SPRITE" );
 	}
 	else if (equal(sModelType,"BSPMODEL_SOLID"))
 	{
 		set_entvar( pEnt, var_solid, SOLID_BSP);
-		set_entvar( pEnt, var_movetype, MOVETYPE_PUSH);
 		set_entvar( pEnt, var_skin, CONTENTS_SOLID);
 		dllfunc( DLLFunc_Spawn, pEnt);
 		SetThink( pEnt, "AD_THINK" );
@@ -1691,7 +1726,6 @@ public create_one_ad(id)
 	{
 		rg_set_ent_rendering(pEnt, kRenderFxNone, Float:{255.0,255.0,255.0}, kRenderTransTexture, 255.0);
 		set_entvar( pEnt, var_solid, SOLID_BSP);
-		set_entvar( pEnt, var_movetype, MOVETYPE_PUSH);
 		set_entvar( pEnt, var_skin, CONTENTS_SOLID);
 		dllfunc( DLLFunc_Spawn, pEnt);
 		SetThink( pEnt, "AD_THINK" );
@@ -1700,7 +1734,6 @@ public create_one_ad(id)
 	else 
 	{
 		set_entvar( pEnt, var_solid, SOLID_NOT);
-		set_entvar( pEnt, var_movetype, MOVETYPE_FLY);
 		SetThink( pEnt, "AD_THINK" );
 	}
 	set_entvar( pEnt, var_classname, UNREAL_MDLS_CUSTOM_CLASSNAME );
@@ -1709,21 +1742,39 @@ public create_one_ad(id)
 public reset_velocity(idx)
 {
 	new other = idx - TASK_RESET_VELOCITY;
-	set_entvar(other, var_basevelocity,Float:{0.0,0.0,0.0});
-	set_entvar(other, var_velocity,Float:{0.0,0.0,0.0});
-	if (task_exists(TASK_SET_VELOCITY+other))
+	if (is_user_connected(other) && is_user_alive(other))
 	{
-		remove_task(TASK_SET_VELOCITY+other);
+		set_entvar(other, var_basevelocity,Float:{0.0,0.0,0.0});
+		set_entvar(other, var_velocity,Float:{0.0,0.0,0.0});
+		if (task_exists(TASK_SET_VELOCITY+other))
+		{
+			remove_task(TASK_SET_VELOCITY+other);
+		}
+		set_entvar(other, var_movetype,MOVETYPE_WALK);
+		unstuckplayer(other);
 	}
 }
 
 public set_velocity(idx)
 {
 	new other = idx - TASK_SET_VELOCITY;
-	new Float:vOrigin[3];
-	get_entvar(other,var_origin,vOrigin);
-	vOrigin[2] += 5.0;
-	set_entvar(other,var_origin,vOrigin);
+	if (is_user_connected(other) && is_user_alive(other))
+	{
+		new Float:vOrigin[3];
+		new Float:vOrigin2[3];
+		get_entvar(other,var_origin,vOrigin);
+		get_entvar(other,var_oldorigin,vOrigin2);
+		if (get_distance_f(vOrigin,vOrigin2) < 4.5)
+		{
+			vOrigin[2] -= 5.0;
+		}
+		else 
+		{
+			vOrigin[2] += 5.0;
+		}
+		set_entvar(other,var_origin,vOrigin);
+		set_entvar(other, var_movetype,MOVETYPE_FLY);
+	}
 }
 
 public AD_TOUCH_LADDER(const ent, const other)
@@ -1745,16 +1796,12 @@ public AD_TOUCH_LADDER(const ent, const other)
 
 public AD_THINK( const pEnt )
 {
-	if( !is_entity( pEnt ) )
-		return;
+	set_entvar( pEnt, var_gravity, 0.0);
 	AD_THINK_WORKER(pEnt);
 }
 
 public AD_THINK_SPRITE( const pEnt )
 {
-	if( !is_entity( pEnt ) )
-		return;
-	
 	new Float:fFrameRate = get_entvar(pEnt,var_framerate);
 	new iMaxFrames = get_entvar(pEnt,var_iuser1);
 	if (fFrameRate != 0.0 && iMaxFrames > 0)
@@ -1769,7 +1816,6 @@ public AD_THINK_SPRITE( const pEnt )
 }
 
 new magic_swap_global = 0;
-
 public AD_THINK_WORKER( const pEnt )
 {
 	new Float:vUserData[3];
@@ -1824,6 +1870,7 @@ public AD_THINK_WORKER( const pEnt )
 		}
 		else 
 			vAngles[iRotateDir] += fRotateSpeed;
+		
 		set_entvar(pEnt,var_angles,vAngles);
 	}
 	
@@ -1883,7 +1930,6 @@ public AD_THINK_WORKER( const pEnt )
 					{
 						vAngles[iReverseMoveDir] -= 180.0;
 					}
-					
 					
 					set_entvar(pEnt,var_angles,vAngles);
 				}
