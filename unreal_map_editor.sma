@@ -1628,6 +1628,11 @@ public plugin_precache()
 	}
 	
 	log_amx("[%s] Loaded %d objects total, %d for current map, and %d models.",PLUGIN,get_ads_count(),a_curmap_cnt,g_iPrecachedModels);
+	for(new i = 0; i < 33;i++)
+	{
+		search_next_ad(i);
+	}
+	
 }
 
 
