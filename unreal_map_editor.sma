@@ -39,9 +39,6 @@ new g_iPlayerSelectID[33] = {0,...};
 
 new g_sMapName[33];
 
-
-new bool:SkipFullPack = false;
-
 public plugin_init() 
 {
 	register_plugin(PLUGIN, VERSION, AUTHOR)
@@ -61,8 +58,6 @@ public plugin_init()
 	
 	register_clcmd("say /adedit", "MENU_AD_MENU_SELECT")
 	register_clcmd("unreal_mdl_edit", "MENU_AD_MENU_SELECT")
-	register_clcmd("test", "test")
-	register_clcmd("say /test", "test")
 	
 	g_fMapStartTime = get_gametime();
 	
@@ -75,11 +70,6 @@ public CBasePlayer_Spawn_Post(const id)
 	{
 		unstuckplayer(id);
 	}
-}
-
-public test(id)
-{
-	SkipFullPack = !SkipFullPack;
 }
 
 new g_iSelectedAd[33] = {0,...};
@@ -1447,7 +1437,7 @@ public MENU_CREATEAD(id)
 
 public AddToFullPack_Post(const handle, const e, const ent, const host, const hostflags, const bool:player, const pSet)
 {
-	if (!player && !SkipFullPack)
+	if (!player)
 	{
 		if (is_entity(ent))
 		{
