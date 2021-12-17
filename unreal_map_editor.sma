@@ -8,7 +8,7 @@
 
 
 #define PLUGIN "Unreal Map Editor"
-#define VERSION "1.7"
+#define VERSION "1.8"
 #define AUTHOR "karaulov"
 
 #define TASK_THINK 10000
@@ -1651,7 +1651,9 @@ public create_one_ad(id)
 	
 	if (get_ad_starttime(id) != 0)
 	{
-		set_entvar( pEnt, var_effects,get_entvar(pEnt,var_effects) + EF_NODRAW);
+		set_entvar( pEnt, var_iuser3, get_entvar(pEnt,var_solid));
+		set_entvar( pEnt, var_solid, SOLID_NOT);
+		set_entvar( pEnt, var_effects, get_entvar(pEnt,var_effects) + EF_NODRAW);
 	}
 	
 	set_entvar( pEnt, var_classname, UNREAL_MDLS_CUSTOM_CLASSNAME );
@@ -1927,6 +1929,8 @@ public AD_THINK_WORKER( const pEnt )
 			if (iStartTime < get_gametime() - g_fRoundStartTime)
 			{
 				set_entvar(pEnt,var_effects,uEffFlags - EF_NODRAW);
+				set_entvar(pEnt,var_solid, get_entvar(pEnt,var_iuser3));
+				set_task_ex(0.2, "unstuck_all", .id = TASK_UNSTUCK);
 			}
 		}
 	}
