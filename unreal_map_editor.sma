@@ -1280,10 +1280,15 @@ public MENU_CREATEAD_HANDLER(id, vmenu, item)
 		}
 		case 3:
 		{
-			CREATE_NEW_AD(id, "BSPMODEL_SOLID");
+			CREATE_NEW_AD(id, "MODEL_SOLID");
 			MENU_CREATEAD(id);
 		}
 		case 4:
+		{
+			CREATE_NEW_AD(id, "BSPMODEL_SOLID");
+			MENU_CREATEAD(id);
+		}
+		case 5:
 		{
 			CREATE_NEW_AD(id, "BSPMODEL_LADDER");
 			MENU_CREATEAD(id);
@@ -1342,12 +1347,14 @@ public MENU_CREATEAD(id)
 		menu_additem(vmenu, tmpmenuitem,"1")
 		formatex(tmpmenuitem,charsmax(tmpmenuitem),"\w[\r%s\w]", "Создать MODEL");
 		menu_additem(vmenu, tmpmenuitem,"2")
+		formatex(tmpmenuitem,charsmax(tmpmenuitem),"\w[\r%s\w]", "Создать MODEL_SOLID");
+		menu_additem(vmenu, tmpmenuitem,"3")
 		if (containi(tmpmodelpath,".bsp") != -1)
 		{
 			formatex(tmpmenuitem,charsmax(tmpmenuitem),"\w[\r%s\w]", "Создать BSPMODEL_SOLID");
-			menu_additem(vmenu, tmpmenuitem,"3")
-			formatex(tmpmenuitem,charsmax(tmpmenuitem),"\w[\r%s\w]", "Создать BSPMODEL_LADDER");
 			menu_additem(vmenu, tmpmenuitem,"4")
+			formatex(tmpmenuitem,charsmax(tmpmenuitem),"\w[\r%s\w]", "Создать BSPMODEL_LADDER");
+			menu_additem(vmenu, tmpmenuitem,"5")
 		}
 		
 		menu_setprop(vmenu, MPROP_EXITNAME, "\rВыйти из UNREAL AD меню")
@@ -1591,6 +1598,7 @@ public create_one_ad(id)
 	get_ad_angles(id,vAngles);
 	set_entvar( pEnt, var_nextthink, get_gametime( ) + 0.075);
 	set_entvar( pEnt, var_origin, vOrigin );
+	entity_set_origin( pEnt, vOrigin);
 	set_entvar( pEnt, var_angles, vAngles );
 	set_entvar( pEnt, var_iuser1, engfunc(EngFunc_ModelFrames, pPrecacheId) - 1);
 	set_entvar( pEnt, var_iuser2, get_ad_team(id) + UNREAL_MDL_MAGIC_NUMBER);
@@ -1619,7 +1627,7 @@ public create_one_ad(id)
 	vUserData[0] = float(get_ad_reversemovedir(id));
 	set_entvar( pEnt, var_vuser3, vUserData);
 	
-	set_entvar( pEnt, var_movetype, MOVETYPE_FOLLOW);
+	set_entvar( pEnt, var_movetype, MOVETYPE_FLYMISSILE);
 	
 	if (equal(sModelType,"SPRITE"))
 	{
@@ -1632,6 +1640,15 @@ public create_one_ad(id)
 		set_entvar( pEnt, var_solid, SOLID_BSP);
 		set_entvar( pEnt, var_skin, CONTENTS_SOLID);
 		dllfunc( DLLFunc_Spawn, pEnt);
+		SetThinkEx( pEnt, "AD_THINK" );
+	}
+	else if (equal(sModelType,"MODEL_SOLID"))
+	{
+		set_entvar( pEnt, var_solid, SOLID_BBOX);
+		set_entvar( pEnt, var_mins, Float:{-32.0,-32.0,-32.0});
+		set_entvar( pEnt, var_maxs, Float:{32.0,32.0,32.0});
+		set_entvar( pEnt, var_absmin, Float:{-32.0,-32.0,-32.0});
+		set_entvar( pEnt, var_absmax, Float:{32.0,32.0,32.0});
 		SetThinkEx( pEnt, "AD_THINK" );
 	}
 	else if (equal(sModelType,"BSPMODEL_LADDER"))
@@ -1649,9 +1666,9 @@ public create_one_ad(id)
 		SetThinkEx( pEnt, "AD_THINK" );
 	}
 	
+	set_entvar( pEnt, var_iuser3, get_entvar(pEnt,var_solid));
 	if (get_ad_starttime(id) != 0)
 	{
-		set_entvar( pEnt, var_iuser3, get_entvar(pEnt,var_solid));
 		set_entvar( pEnt, var_solid, SOLID_NOT);
 		set_entvar( pEnt, var_effects, get_entvar(pEnt,var_effects) + EF_NODRAW);
 	}
@@ -1836,6 +1853,7 @@ public AD_THINK_WORKER( const pEnt )
 		vOrigin3[1] != fMoveSpeed &&
 		vOrigin3[2] != fMoveSpeed)
 		{
+			set_entvar(pEnt,var_solid,get_entvar(pEnt,var_iuser3));
 			get_entvar(pEnt,var_origin,vOrigin);
 			get_entvar(pEnt,var_oldorigin,vOrigin2);
 			if (get_distance_f(vOrigin,vOrigin2) < 0.5)
@@ -1883,6 +1901,7 @@ public AD_THINK_WORKER( const pEnt )
 					}
 					
 					set_entvar(pEnt,var_angles,vAngles);
+					set_entvar(pEnt,var_solid,SOLID_NOT);
 				}
 			}
 			set_entvar(pEnt,var_oldorigin,vOrigin);
