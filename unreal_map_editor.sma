@@ -8,7 +8,7 @@
 
 
 #define PLUGIN "Unreal Map Editor"
-#define VERSION "1.8"
+#define VERSION "1.9"
 #define AUTHOR "karaulov"
 
 #define TASK_THINK 10000
@@ -1675,6 +1675,7 @@ public create_one_ad(id)
 	
 	set_entvar( pEnt, var_classname, UNREAL_MDLS_CUSTOM_CLASSNAME );
 	
+	entity_set_origin( pEnt, vOrigin);
 	SetThink( pEnt, "EMPTY_THINK" );
 }
 
