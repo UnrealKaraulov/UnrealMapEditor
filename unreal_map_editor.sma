@@ -8,7 +8,7 @@
 
 
 #define PLUGIN "Unreal Map Editor"
-#define VERSION "0.5"
+#define VERSION "1.5"
 #define AUTHOR "karaulov"
 
 
@@ -28,19 +28,16 @@ new UNREAL_MDLS_CUSTOM_CLASSNAME[ ] = "unreal_mdl";
 new Float:g_fMapStartTime = 0.0;
 new Float:g_fRoundStartTime = 0.0;
 
-new TeamName:g_iPlayerTeams[33] = {TEAM_UNASSIGNED,...};
+new g_iPlayerTeams[33] = {0,...};
 new UNREAL_MDL_MAGIC_NUMBER = 20000;
 
-new UNREAL_MDL_MAX_MENUS = 8;
+new UNREAL_MDL_MAX_MENUS = 9;
 
 new UNREAL_MDL_ACCESS_LEVEL = ADMIN_BAN;
 
 new g_iPlayerSelectID[33] = {0,...};
 
 new g_sMapName[33];
-
-
-new bool:SkipFullPack = false;
 
 public plugin_init() 
 {
@@ -61,8 +58,6 @@ public plugin_init()
 	
 	register_clcmd("say /adedit", "MENU_AD_MENU_SELECT")
 	register_clcmd("unreal_mdl_edit", "MENU_AD_MENU_SELECT")
-	register_clcmd("test", "test")
-	register_clcmd("say /test", "test")
 	
 	g_fMapStartTime = get_gametime();
 	
@@ -75,11 +70,6 @@ public CBasePlayer_Spawn_Post(const id)
 	{
 		unstuckplayer(id);
 	}
-}
-
-public test(id)
-{
-	SkipFullPack = !SkipFullPack;
 }
 
 new g_iSelectedAd[33] = {0,...};
@@ -145,19 +135,15 @@ public MENU_DISABLEAD_HANDLER(id, vmenu, item)
 		{
 			set_ad_disabled(g_iSelectedAd[id], get_ad_disabled(g_iSelectedAd[id]) == 0 ? 1 : 0);
 			update_all_ads(id);
-			menu_destroy(vmenu);
 			MENU_AD_MENU_SELECT(id);
-			return PLUGIN_HANDLED;
 		}
 		case 2:
 		{
 			new Float:vOrigin[3];
 			get_ad_origin(g_iSelectedAd[id], vOrigin);
 			set_entvar(id,var_origin,vOrigin);
-			menu_destroy(vmenu);
 			MENU_AD_MENU_SELECT(id);
 			unstuckplayer(id);
-			return PLUGIN_HANDLED;
 		}
 		case 3:
 		{
@@ -165,23 +151,17 @@ public MENU_DISABLEAD_HANDLER(id, vmenu, item)
 			get_entvar(id,var_origin,vOrigin);
 			set_ad_origin(g_iSelectedAd[id],vOrigin);
 			update_all_ads(id);
-			menu_destroy(vmenu);
 			MENU_AD_MENU_SELECT(id);
-			return PLUGIN_HANDLED;
 		}
 		case 100:
 		{
 			search_next_ad(id);
-			menu_destroy(vmenu);
 			MENU_AD_MENU_SELECT(id);
-			return PLUGIN_HANDLED;
 		}
 		case 101:
 		{
 			search_next_ad(id);
-			menu_destroy(vmenu);
 			MENU_AD_MENU_SELECT(id);
-			return PLUGIN_HANDLED;
 		}
 		case 102:
 		{
@@ -190,9 +170,7 @@ public MENU_DISABLEAD_HANDLER(id, vmenu, item)
 			{
 				g_iSelectedMenu[id] = 0;
 			}
-			menu_destroy(vmenu);
 			MENU_AD_MENU_SELECT(id);
-			return PLUGIN_HANDLED;
 		}
 	}
 	menu_destroy(vmenu);
@@ -255,40 +233,22 @@ public MENU_TEAMVISIBLE_HANDLER(id, vmenu, item)
 		case 1:
 		{
 			new teamid = get_ad_team(g_iSelectedAd[id]);
-			if (teamid == 0)
-			{
-				set_ad_team(g_iSelectedAd[id], TEAM_TERRORIST);
-			}
-			else if (teamid == 1)
-			{
-				set_ad_team(g_iSelectedAd[id], TEAM_CT);
-			}
-			else if (teamid == 2)
-			{
-				set_ad_team(g_iSelectedAd[id], TEAM_SPECTATOR);
-			}
-			else
-			{
-				set_ad_team(g_iSelectedAd[id], TEAM_UNASSIGNED);
-			}
+			teamid++;
+			if (teamid >= 4)
+				teamid = 0;
+			set_ad_team(g_iSelectedAd[id], teamid);
 			update_all_ads(id);
-			menu_destroy(vmenu)
 			MENU_AD_MENU_SELECT(id);
-			return PLUGIN_HANDLED
 		}
 		case 100:
 		{
 			search_next_ad(id);
-			menu_destroy(vmenu)
 			MENU_AD_MENU_SELECT(id);
-			return PLUGIN_HANDLED
 		}
 		case 101:
 		{
 			search_next_ad(id);
-			menu_destroy(vmenu)
 			MENU_AD_MENU_SELECT(id);
-			return PLUGIN_HANDLED
 		}
 		case 102:
 		{
@@ -297,9 +257,7 @@ public MENU_TEAMVISIBLE_HANDLER(id, vmenu, item)
 			{
 				g_iSelectedMenu[id] = 0;
 			}
-			menu_destroy(vmenu)
 			MENU_AD_MENU_SELECT(id);
-			return PLUGIN_HANDLED
 		}
 	}
 	menu_destroy(vmenu)
@@ -349,7 +307,6 @@ public MENU_TEAMVISIBLE(id)
 new g_iSelectedCoord[33] = {0,...};
 
 
-
 public MENU_MOVEAD_HANDLER(id, vmenu, item) 
 {
 	if(item == MENU_EXIT || !is_user_connected(id)) 
@@ -369,9 +326,7 @@ public MENU_MOVEAD_HANDLER(id, vmenu, item)
 			g_iSelectedCoord[id]++;
 			if (g_iSelectedCoord[id] > 2)
 				g_iSelectedCoord[id] = 0;
-			menu_destroy(vmenu)
 			MENU_AD_MENU_SELECT(id);
-			return PLUGIN_HANDLED
 		}
 		case 2:
 		{
@@ -380,9 +335,7 @@ public MENU_MOVEAD_HANDLER(id, vmenu, item)
 			vOrigin[g_iSelectedCoord[id]]+=1;
 			set_ad_origin(g_iSelectedAd[id],vOrigin);
 			update_all_ads(id);
-			menu_destroy(vmenu)
 			MENU_AD_MENU_SELECT(id);
-			return PLUGIN_HANDLED
 		}
 		case 3:
 		{
@@ -391,9 +344,7 @@ public MENU_MOVEAD_HANDLER(id, vmenu, item)
 			vOrigin[g_iSelectedCoord[id]]+=10;
 			set_ad_origin(g_iSelectedAd[id],vOrigin);
 			update_all_ads(id);
-			menu_destroy(vmenu)
 			MENU_AD_MENU_SELECT(id);
-			return PLUGIN_HANDLED
 		}
 		case 4:
 		{
@@ -402,9 +353,7 @@ public MENU_MOVEAD_HANDLER(id, vmenu, item)
 			vOrigin[g_iSelectedCoord[id]]-=1;
 			set_ad_origin(g_iSelectedAd[id],vOrigin);
 			update_all_ads(id);
-			menu_destroy(vmenu)
 			MENU_AD_MENU_SELECT(id);
-			return PLUGIN_HANDLED
 		}
 		case 5:
 		{
@@ -413,23 +362,17 @@ public MENU_MOVEAD_HANDLER(id, vmenu, item)
 			vOrigin[g_iSelectedCoord[id]]-=10;
 			set_ad_origin(g_iSelectedAd[id],vOrigin);
 			update_all_ads(id);
-			menu_destroy(vmenu)
 			MENU_AD_MENU_SELECT(id);
-			return PLUGIN_HANDLED
 		}
 		case 100:
 		{
 			search_next_ad(id);
-			menu_destroy(vmenu)
 			MENU_AD_MENU_SELECT(id);
-			return PLUGIN_HANDLED
 		}
 		case 101:
 		{
 			search_next_ad(id);
-			menu_destroy(vmenu)
 			MENU_AD_MENU_SELECT(id);
-			return PLUGIN_HANDLED
 		}
 		case 102:
 		{
@@ -438,9 +381,7 @@ public MENU_MOVEAD_HANDLER(id, vmenu, item)
 			{
 				g_iSelectedMenu[id] = 0;
 			}
-			menu_destroy(vmenu)
 			MENU_AD_MENU_SELECT(id);
-			return PLUGIN_HANDLED
 		}
 	}
 	menu_destroy(vmenu)
@@ -509,55 +450,41 @@ public MENU_FRAMERATEAD_HANDLER(id, vmenu, item)
 	{	
 		case 1:
 		{
-			menu_destroy(vmenu)
 			MENU_AD_MENU_SELECT(id);
-			return PLUGIN_HANDLED
 		}
 		case 2:
 		{
 			set_ad_framerate(g_iSelectedAd[id],get_ad_framerate(g_iSelectedAd[id]) + 0.5);
 			update_all_ads(id);
-			menu_destroy(vmenu)
 			MENU_AD_MENU_SELECT(id);
-			return PLUGIN_HANDLED
 		}
 		case 3:
 		{
 			set_ad_framerate(g_iSelectedAd[id],get_ad_framerate(g_iSelectedAd[id]) - 0.5);
 			update_all_ads(id);
-			menu_destroy(vmenu)
 			MENU_AD_MENU_SELECT(id);
-			return PLUGIN_HANDLED
 		}
 		case 4:
 		{
 			set_ad_framerate(g_iSelectedAd[id],get_ad_framerate(g_iSelectedAd[id]) + 1.0);
 			update_all_ads(id);
-			menu_destroy(vmenu)
 			MENU_AD_MENU_SELECT(id);
-			return PLUGIN_HANDLED
 		}
 		case 5:
 		{
 			set_ad_framerate(g_iSelectedAd[id],get_ad_framerate(g_iSelectedAd[id]) - 1.0);
 			update_all_ads(id);
-			menu_destroy(vmenu)
 			MENU_AD_MENU_SELECT(id);
-			return PLUGIN_HANDLED
 		}
 		case 100:
 		{
 			search_next_ad(id);
-			menu_destroy(vmenu)
 			MENU_AD_MENU_SELECT(id);
-			return PLUGIN_HANDLED
 		}
 		case 101:
 		{
 			search_next_ad(id);
-			menu_destroy(vmenu)
 			MENU_AD_MENU_SELECT(id);
-			return PLUGIN_HANDLED
 		}
 		case 102:
 		{
@@ -566,9 +493,7 @@ public MENU_FRAMERATEAD_HANDLER(id, vmenu, item)
 			{
 				g_iSelectedMenu[id] = 0;
 			}
-			menu_destroy(vmenu)
 			MENU_AD_MENU_SELECT(id);
-			return PLUGIN_HANDLED
 		}
 	}
 	menu_destroy(vmenu)
@@ -620,6 +545,134 @@ public MENU_FRAMERATEAD(id)
 	menu_display(id,vmenu,0)
 }
 
+new bool:g_bIsShowTimePresents[33] = {false,...};
+
+public MENU_DELAY_START_END_AD_HANDLER(id, vmenu, item) 
+{
+	if(item == MENU_EXIT || !is_user_connected(id)) 
+	{
+		menu_destroy(vmenu)
+		return PLUGIN_HANDLED
+	}
+	
+	new data[6], iName[64], access, callback
+	menu_item_getinfo(vmenu, item, access, data, 5, iName, 63, callback)
+	     
+	new key = str_to_num(data)
+	switch(key) 
+	{	
+		case 1:
+		{
+			g_bIsShowTimePresents[id] = !g_bIsShowTimePresents[id];
+			MENU_AD_MENU_SELECT(id);
+		}
+		case 2:
+		{
+			if (g_bIsShowTimePresents[id])
+				set_ad_starttime(g_iSelectedAd[id],get_ad_starttime(g_iSelectedAd[id]) + 1);
+			else 
+				set_ad_lifetime(g_iSelectedAd[id],get_ad_lifetime(g_iSelectedAd[id]) + 1);
+			update_all_ads(id);
+			MENU_AD_MENU_SELECT(id);
+		}
+		case 3:
+		{
+			if (g_bIsShowTimePresents[id])
+				set_ad_starttime(g_iSelectedAd[id],get_ad_starttime(g_iSelectedAd[id]) - 1);
+			else 
+				set_ad_lifetime(g_iSelectedAd[id],get_ad_lifetime(g_iSelectedAd[id]) - 1);
+			update_all_ads(id);
+			MENU_AD_MENU_SELECT(id);
+		}
+		case 4:
+		{
+			if (g_bIsShowTimePresents[id])
+				set_ad_starttime(g_iSelectedAd[id],get_ad_starttime(g_iSelectedAd[id]) + 10);
+			else 
+				set_ad_lifetime(g_iSelectedAd[id],get_ad_lifetime(g_iSelectedAd[id]) + 10);
+			update_all_ads(id);
+			MENU_AD_MENU_SELECT(id);
+		}
+		case 5:
+		{
+			if (g_bIsShowTimePresents[id])
+				set_ad_starttime(g_iSelectedAd[id],get_ad_starttime(g_iSelectedAd[id]) - 10);
+			else 
+				set_ad_lifetime(g_iSelectedAd[id],get_ad_lifetime(g_iSelectedAd[id]) - 10);
+			update_all_ads(id);
+			MENU_AD_MENU_SELECT(id);
+		}
+		case 100:
+		{
+			search_next_ad(id);
+			MENU_AD_MENU_SELECT(id);
+		}
+		case 101:
+		{
+			search_next_ad(id);
+			MENU_AD_MENU_SELECT(id);
+		}
+		case 102:
+		{
+			g_iSelectedMenu[id]++;
+			if (g_iSelectedMenu[id] < 0 || g_iSelectedMenu[id] >= UNREAL_MDL_MAX_MENUS)
+			{
+				g_iSelectedMenu[id] = 0;
+			}
+			MENU_AD_MENU_SELECT(id);
+		}
+	}
+	menu_destroy(vmenu)
+	return PLUGIN_HANDLED
+}
+
+
+
+public MENU_DELAY_START_END_AD(id)
+{
+	if (get_ads_count_map() == 0)
+	{
+		client_print_color(id,print_team_red,"НЕТ ДОСТУПНОЙ РЕКЛАМЫ");
+		return ;
+	}
+	
+	if (g_iSelectedAd[id] < 0 || g_iSelectedAd[id] >= get_ads_count())
+	{
+		g_iSelectedAd[id] = 0;
+	}
+	
+	new tmpmodelpath[256];
+	get_ad_model(g_iSelectedAd[id],tmpmodelpath,charsmax(tmpmodelpath));
+
+	new tmpmenuitem[256];
+	formatex(tmpmenuitem,charsmax(tmpmenuitem),"\r[\yMODEL START/END\r]^n%d=\r[\w%s\r]",g_iSelectedAd[id], tmpmodelpath);
+
+	new vmenu = menu_create(tmpmenuitem, "MENU_DELAY_START_END_AD_HANDLER")
+	
+		
+	menu_additem(vmenu, "\wСледующее меню","102")
+	menu_additem(vmenu, "\yСледующая модель","100")
+		
+	formatex(tmpmenuitem,charsmax(tmpmenuitem),"\w[\y%s\r] = [\r%i\w]", g_bIsShowTimePresents[id] ? "START TIME" : "END TIME", 
+												g_bIsShowTimePresents[id] ? get_ad_starttime(g_iSelectedAd[id]) : get_ad_lifetime(g_iSelectedAd[id]));
+		
+	menu_additem(vmenu, tmpmenuitem,"1")
+	
+	menu_additem(vmenu, "\wУвеличить [\r+1\w]","2")
+	
+	menu_additem(vmenu, "\wУменьшить [\r-1\w]","3")
+	
+	menu_additem(vmenu, "\wУвеличить [\r+10\w]","4")
+	
+	menu_additem(vmenu, "\wУменьшить [\r-10\w]","5")
+
+	
+	menu_setprop(vmenu, MPROP_EXITNAME, "\rВыйти из \w[\rTIMELIFE\w] меню")
+	menu_setprop(vmenu, MPROP_EXIT,MEXIT_ALL)
+
+	menu_display(id,vmenu,0)
+}
+
 
 public MENU_SEQNUMAD_HANDLER(id, vmenu, item) 
 {
@@ -637,39 +690,29 @@ public MENU_SEQNUMAD_HANDLER(id, vmenu, item)
 	{	
 		case 1:
 		{
-			menu_destroy(vmenu)
 			MENU_AD_MENU_SELECT(id);
-			return PLUGIN_HANDLED
 		}
 		case 2:
 		{
 			set_ad_sequence(g_iSelectedAd[id],get_ad_sequence(g_iSelectedAd[id]) + 1);
 			update_all_ads(id);
-			menu_destroy(vmenu)
 			MENU_AD_MENU_SELECT(id);
-			return PLUGIN_HANDLED
 		}
 		case 3:
 		{
 			set_ad_sequence(g_iSelectedAd[id],get_ad_sequence(g_iSelectedAd[id]) - 1);
 			update_all_ads(id);
-			menu_destroy(vmenu)
 			MENU_AD_MENU_SELECT(id);
-			return PLUGIN_HANDLED
 		}
 		case 100:
 		{
 			search_next_ad(id);
-			menu_destroy(vmenu)
 			MENU_AD_MENU_SELECT(id);
-			return PLUGIN_HANDLED
 		}
 		case 101:
 		{
 			search_next_ad(id);
-			menu_destroy(vmenu)
 			MENU_AD_MENU_SELECT(id);
-			return PLUGIN_HANDLED
 		}
 		case 102:
 		{
@@ -678,9 +721,7 @@ public MENU_SEQNUMAD_HANDLER(id, vmenu, item)
 			{
 				g_iSelectedMenu[id] = 0;
 			}
-			menu_destroy(vmenu)
 			MENU_AD_MENU_SELECT(id);
-			return PLUGIN_HANDLED
 		}
 	}
 	menu_destroy(vmenu)
@@ -759,9 +800,7 @@ public MENU_ANGLEAD_HANDLER(id, vmenu, item)
 			g_iSelectedCoord[id]++;
 			if (g_iSelectedCoord[id] > 2)
 				g_iSelectedCoord[id] = 0;
-			menu_destroy(vmenu)
 			MENU_AD_MENU_SELECT(id);
-			return PLUGIN_HANDLED
 		}
 		case 2:
 		{
@@ -770,9 +809,7 @@ public MENU_ANGLEAD_HANDLER(id, vmenu, item)
 			vAngles[g_iSelectedCoord[id]]+=1;
 			set_ad_angles(g_iSelectedAd[id],vAngles);
 			update_all_ads(id);
-			menu_destroy(vmenu)
 			MENU_AD_MENU_SELECT(id);
-			return PLUGIN_HANDLED
 		}
 		case 3:
 		{
@@ -781,9 +818,7 @@ public MENU_ANGLEAD_HANDLER(id, vmenu, item)
 			vAngles[g_iSelectedCoord[id]]+=10;
 			set_ad_angles(g_iSelectedAd[id],vAngles);
 			update_all_ads(id);
-			menu_destroy(vmenu)
 			MENU_AD_MENU_SELECT(id);
-			return PLUGIN_HANDLED
 		}
 		case 4:
 		{
@@ -792,9 +827,7 @@ public MENU_ANGLEAD_HANDLER(id, vmenu, item)
 			vAngles[g_iSelectedCoord[id]]-=1;
 			set_ad_angles(g_iSelectedAd[id],vAngles);
 			update_all_ads(id);
-			menu_destroy(vmenu)
 			MENU_AD_MENU_SELECT(id);
-			return PLUGIN_HANDLED
 		}
 		case 5:
 		{
@@ -803,23 +836,17 @@ public MENU_ANGLEAD_HANDLER(id, vmenu, item)
 			vAngles[g_iSelectedCoord[id]]-=10;
 			set_ad_angles(g_iSelectedAd[id],vAngles);
 			update_all_ads(id);
-			menu_destroy(vmenu)
 			MENU_AD_MENU_SELECT(id);
-			return PLUGIN_HANDLED
 		}
 		case 100:
 		{
 			search_next_ad(id);
-			menu_destroy(vmenu)
 			MENU_AD_MENU_SELECT(id);
-			return PLUGIN_HANDLED
 		}
 		case 101:
 		{
 			search_next_ad(id);
-			menu_destroy(vmenu)
 			MENU_AD_MENU_SELECT(id);
-			return PLUGIN_HANDLED
 		}
 		case 102:
 		{
@@ -828,9 +855,7 @@ public MENU_ANGLEAD_HANDLER(id, vmenu, item)
 			{
 				g_iSelectedMenu[id] = 0;
 			}
-			menu_destroy(vmenu)
 			MENU_AD_MENU_SELECT(id);
-			return PLUGIN_HANDLED
 		}
 	}
 	menu_destroy(vmenu)
@@ -897,9 +922,7 @@ public MENU_ROTATEAD_SPEED_HANDLER(id, vmenu, item)
 	{	
 		case 0:
 		{
-			menu_destroy(vmenu)
 			MENU_AD_MENU_SELECT(id);
-			return PLUGIN_HANDLED
 		}
 		case 1:
 		{
@@ -908,55 +931,41 @@ public MENU_ROTATEAD_SPEED_HANDLER(id, vmenu, item)
 				iSelectedRotateDir = 0;
 			set_ad_rotatedir(g_iSelectedAd[id],iSelectedRotateDir);
 			update_all_ads(id);
-			menu_destroy(vmenu)
 			MENU_AD_MENU_SELECT(id);
-			return PLUGIN_HANDLED
 		}
 		case 2:
 		{
 			set_ad_rotate_speed(g_iSelectedAd[id],get_ad_rotate_speed(g_iSelectedAd[id]) + 0.1);
 			update_all_ads(id);
-			menu_destroy(vmenu)
 			MENU_AD_MENU_SELECT(id);
-			return PLUGIN_HANDLED
 		}
 		case 3:
 		{
 			set_ad_rotate_speed(g_iSelectedAd[id],get_ad_rotate_speed(g_iSelectedAd[id]) + 1.0);
 			update_all_ads(id);
-			menu_destroy(vmenu)
 			MENU_AD_MENU_SELECT(id);
-			return PLUGIN_HANDLED
 		}
 		case 4:
 		{
 			set_ad_rotate_speed(g_iSelectedAd[id],get_ad_rotate_speed(g_iSelectedAd[id]) - 0.1);
 			update_all_ads(id);
-			menu_destroy(vmenu)
 			MENU_AD_MENU_SELECT(id);
-			return PLUGIN_HANDLED
 		}
 		case 5:
 		{
 			set_ad_rotate_speed(g_iSelectedAd[id],get_ad_rotate_speed(g_iSelectedAd[id]) - 1.0);
 			update_all_ads(id);
-			menu_destroy(vmenu)
 			MENU_AD_MENU_SELECT(id);
-			return PLUGIN_HANDLED
 		}
 		case 100:
 		{
 			search_next_ad(id);
-			menu_destroy(vmenu)
 			MENU_AD_MENU_SELECT(id);
-			return PLUGIN_HANDLED
 		}
 		case 101:
 		{
 			search_next_ad(id);
-			menu_destroy(vmenu)
 			MENU_AD_MENU_SELECT(id);
-			return PLUGIN_HANDLED
 		}
 		case 102:
 		{
@@ -965,9 +974,7 @@ public MENU_ROTATEAD_SPEED_HANDLER(id, vmenu, item)
 			{
 				g_iSelectedMenu[id] = 0;
 			}
-			menu_destroy(vmenu)
 			MENU_AD_MENU_SELECT(id);
-			return PLUGIN_HANDLED
 		}
 	}
 	menu_destroy(vmenu)
@@ -1043,9 +1050,7 @@ public MENU_MOVEAD_SPEED_HANDLER(id, vmenu, item)
 	{	
 		case 0:
 		{
-			menu_destroy(vmenu)
 			MENU_AD_MENU_SELECT(id);
-			return PLUGIN_HANDLED
 		}
 		case 1:
 		{
@@ -1054,9 +1059,7 @@ public MENU_MOVEAD_SPEED_HANDLER(id, vmenu, item)
 				iSelectedMoveDir = 0;
 			set_ad_movedir(g_iSelectedAd[id],iSelectedMoveDir);
 			update_all_ads(id);
-			menu_destroy(vmenu)
 			MENU_AD_MENU_SELECT(id);
-			return PLUGIN_HANDLED
 		}
 		case 6:
 		{
@@ -1065,55 +1068,41 @@ public MENU_MOVEAD_SPEED_HANDLER(id, vmenu, item)
 				iSelectedMoveDir = 0;
 			set_ad_reversemovedir(g_iSelectedAd[id],iSelectedMoveDir);
 			update_all_ads(id);
-			menu_destroy(vmenu)
 			MENU_AD_MENU_SELECT(id);
-			return PLUGIN_HANDLED
 		}
 		case 2:
 		{
 			set_ad_move_speed(g_iSelectedAd[id],get_ad_move_speed(g_iSelectedAd[id]) + 0.1);
 			update_all_ads(id);
-			menu_destroy(vmenu)
 			MENU_AD_MENU_SELECT(id);
-			return PLUGIN_HANDLED
 		}
 		case 3:
 		{
 			set_ad_move_speed(g_iSelectedAd[id],get_ad_move_speed(g_iSelectedAd[id]) + 1.0);
 			update_all_ads(id);
-			menu_destroy(vmenu)
 			MENU_AD_MENU_SELECT(id);
-			return PLUGIN_HANDLED
 		}
 		case 4:
 		{
 			set_ad_move_speed(g_iSelectedAd[id],get_ad_move_speed(g_iSelectedAd[id]) - 0.1);
 			update_all_ads(id);
-			menu_destroy(vmenu)
 			MENU_AD_MENU_SELECT(id);
-			return PLUGIN_HANDLED
 		}
 		case 5:
 		{
 			set_ad_move_speed(g_iSelectedAd[id],get_ad_move_speed(g_iSelectedAd[id]) - 1.0);
 			update_all_ads(id);
-			menu_destroy(vmenu)
 			MENU_AD_MENU_SELECT(id);
-			return PLUGIN_HANDLED
 		}
 		case 100:
 		{
 			search_next_ad(id);
-			menu_destroy(vmenu)
 			MENU_AD_MENU_SELECT(id);
-			return PLUGIN_HANDLED
 		}
 		case 101:
 		{
 			search_next_ad(id);
-			menu_destroy(vmenu)
 			MENU_AD_MENU_SELECT(id);
-			return PLUGIN_HANDLED
 		}
 		case 102:
 		{
@@ -1122,9 +1111,7 @@ public MENU_MOVEAD_SPEED_HANDLER(id, vmenu, item)
 			{
 				g_iSelectedMenu[id] = 0;
 			}
-			menu_destroy(vmenu)
 			MENU_AD_MENU_SELECT(id);
-			return PLUGIN_HANDLED
 		}
 	}
 	menu_destroy(vmenu)
@@ -1205,19 +1192,19 @@ public MENU_AD_MENU_SELECT(id)
 		}
 		else if(g_iSelectedMenu[id] == 1)
 		{
-			MENU_TEAMVISIBLE(id);
+			MENU_FRAMERATEAD(id);
 		}
 		else if(g_iSelectedMenu[id] == 2)
 		{
-			MENU_MOVEAD(id);
+			MENU_SEQNUMAD(id);
 		}
 		else if(g_iSelectedMenu[id] == 3)
 		{
-			MENU_ANGLEAD(id);
+			MENU_TEAMVISIBLE(id);
 		}
 		else if(g_iSelectedMenu[id] == 4)
 		{
-			MENU_ROTATEAD_SPEED(id);
+			MENU_MOVEAD(id);
 		}
 		else if(g_iSelectedMenu[id] == 5)
 		{
@@ -1225,13 +1212,46 @@ public MENU_AD_MENU_SELECT(id)
 		}
 		else if(g_iSelectedMenu[id] == 6)
 		{
-			MENU_SEQNUMAD(id);
+			MENU_ANGLEAD(id);
+		}
+		else if(g_iSelectedMenu[id] == 7)
+		{
+			MENU_ROTATEAD_SPEED(id);
 		}
 		else 
 		{
-			MENU_FRAMERATEAD(id);
+			MENU_DELAY_START_END_AD(id);
 		}
 	}
+}
+
+public CREATE_NEW_AD(id, adtype[])
+{
+	new tmpmodelpath[256];
+	precache_get_model(g_iPlayerSelectID[id],tmpmodelpath, charsmax(tmpmodelpath));
+	new ads = get_ads_count();
+	new Float:vOrigin[3];
+	get_entvar(id,var_origin,vOrigin);
+	g_iSelectedAd[id] = get_ads_count();
+	set_ads_count(get_ads_count() + 1);
+	set_ad_model(ads,tmpmodelpath);
+	set_ad_type(ads,adtype);
+	set_ad_origin(ads,vOrigin);
+	set_ad_angles(ads, Float:{0.0,0.0,0.0});
+	set_ad_disabled(ads, 0);
+	set_ad_starttime(ads,0);
+	set_ad_lifetime(ads,0);
+	set_ad_map(ads,g_sMapName);
+	set_ad_precache(ads,add_precache_model(tmpmodelpath));
+	set_ad_rotate_speed(ads,0.0);
+	set_ad_rotatedir(ads,0);
+	set_ad_move_speed(ads,0.0);
+	set_ad_movedir(ads,0);
+	set_ad_reversemovedir(ads,0);
+	set_ad_team(ads,0);
+	set_ad_framerate(ads,1.0);
+	set_ad_sequence(ads,0);
+	update_all_ads(id);
 }
 
 public MENU_CREATEAD_HANDLER(id, vmenu, item) 
@@ -1250,126 +1270,23 @@ public MENU_CREATEAD_HANDLER(id, vmenu, item)
 	{	
 		case 1:
 		{
-			new tmpmodelpath[256];
-			precache_get_model(g_iPlayerSelectID[id],tmpmodelpath, charsmax(tmpmodelpath));
-			new ads = get_ads_count();
-			new Float:vOrigin[3];
-			get_entvar(id,var_origin,vOrigin);
-			g_iSelectedAd[id] = get_ads_count();
-			set_ads_count(get_ads_count() + 1);
-			set_ad_model(ads,tmpmodelpath);
-			set_ad_type(ads,"SPRITE");
-			set_ad_origin(ads,vOrigin);
-			set_ad_angles(ads, Float:{0.0,0.0,0.0});
-			set_ad_disabled(ads, 0);
-			set_ad_lifetime(ads,0.0);
-			set_ad_lifetime_round(ads,0.0);
-			set_ad_map(ads,g_sMapName);
-			set_ad_precache(ads,add_precache_model(tmpmodelpath));
-			set_ad_rotate_speed(ads,0.0);
-			set_ad_rotatedir(ads,0);
-			set_ad_move_speed(ads,0.0);
-			set_ad_movedir(ads,0);
-			set_ad_reversemovedir(ads,0);
-			set_ad_team(ads,TEAM_UNASSIGNED);
-			set_ad_framerate(ads,1.0);
-			set_ad_sequence(ads,0);
-			update_all_ads(id);
-			menu_destroy(vmenu)
+			CREATE_NEW_AD(id, "SPRITE");
 			MENU_CREATEAD(id);
-			return PLUGIN_HANDLED
 		}
 		case 2:
 		{
-			new tmpmodelpath[256];
-			precache_get_model(g_iPlayerSelectID[id],tmpmodelpath, charsmax(tmpmodelpath));
-			new ads = get_ads_count();
-			new Float:vOrigin[3];
-			get_entvar(id,var_origin,vOrigin);
-			g_iSelectedAd[id] = get_ads_count();
-			set_ads_count(get_ads_count() + 1);
-			set_ad_model(ads,tmpmodelpath);
-			set_ad_type(ads,"MODEL");
-			set_ad_origin(ads,vOrigin);
-			set_ad_angles(ads, Float:{0.0,0.0,0.0});
-			set_ad_disabled(ads, 0);
-			set_ad_lifetime(ads,0.0);
-			set_ad_lifetime_round(ads,0.0);
-			set_ad_map(ads,g_sMapName);
-			set_ad_precache(ads,add_precache_model(tmpmodelpath));
-			set_ad_rotate_speed(ads,0.0);
-			set_ad_rotatedir(ads,0);
-			set_ad_move_speed(ads,0.0);
-			set_ad_movedir(ads,0);
-			set_ad_reversemovedir(ads,0);
-			set_ad_team(ads,TEAM_UNASSIGNED);
-			set_ad_framerate(ads,0.0);
-			set_ad_sequence(ads,0);
-			update_all_ads(id);
-			menu_destroy(vmenu)
+			CREATE_NEW_AD(id, "MODEL");
 			MENU_CREATEAD(id);
-			return PLUGIN_HANDLED
 		}
 		case 3:
 		{
-			new tmpmodelpath[256];
-			precache_get_model(g_iPlayerSelectID[id],tmpmodelpath, charsmax(tmpmodelpath));
-			new ads = get_ads_count();
-			new Float:vOrigin[3];
-			get_entvar(id,var_origin,vOrigin);
-			g_iSelectedAd[id] = get_ads_count();
-			set_ads_count(get_ads_count() + 1);
-			set_ad_model(ads,tmpmodelpath);
-			set_ad_type(ads,"BSPMODEL_SOLID");
-			set_ad_origin(ads,vOrigin);
-			set_ad_angles(ads, Float:{0.0,0.0,0.0});
-			set_ad_disabled(ads, 0);
-			set_ad_lifetime(ads,0.0);
-			set_ad_lifetime_round(ads,0.0);
-			set_ad_map(ads,g_sMapName);
-			set_ad_precache(ads,add_precache_model(tmpmodelpath));
-			set_ad_rotate_speed(ads,0.0);
-			set_ad_rotatedir(ads,0);
-			set_ad_move_speed(ads,0.0);
-			set_ad_movedir(ads,0);
-			set_ad_reversemovedir(ads,0);
-			set_ad_team(ads,TEAM_UNASSIGNED);
-			set_ad_framerate(ads,0.0);
-			set_ad_sequence(ads,0);
-			update_all_ads(id);
-			menu_destroy(vmenu)
+			CREATE_NEW_AD(id, "BSPMODEL_SOLID");
 			MENU_CREATEAD(id);
-			return PLUGIN_HANDLED
 		}
 		case 4:
 		{
-			new tmpmodelpath[256];
-			precache_get_model(g_iPlayerSelectID[id],tmpmodelpath, charsmax(tmpmodelpath));
-			new ads = get_ads_count();
-			new Float:vOrigin[3];
-			get_entvar(id,var_origin,vOrigin);
-			g_iSelectedAd[id] = get_ads_count();
-			set_ads_count(get_ads_count() + 1);
-			set_ad_model(ads,tmpmodelpath);
-			set_ad_type(ads,"BSPMODEL_LADDER");
-			set_ad_origin(ads,vOrigin);
-			set_ad_angles(ads, Float:{0.0,0.0,0.0});
-			set_ad_disabled(ads, 0);
-			set_ad_lifetime(ads,0.0);
-			set_ad_lifetime_round(ads,0.0);
-			set_ad_map(ads,g_sMapName);
-			set_ad_precache(ads,add_precache_model(tmpmodelpath));
-			set_ad_rotate_speed(ads,0.0);
-			set_ad_rotatedir(ads,0);
-			set_ad_move_speed(ads,0.0);
-			set_ad_movedir(ads,0);
-			set_ad_reversemovedir(ads,0);
-			set_ad_team(ads,TEAM_UNASSIGNED);
-			set_ad_framerate(ads,0.0);
-			update_all_ads(id);
-			menu_destroy(vmenu)
+			CREATE_NEW_AD(id, "BSPMODEL_LADDER");
 			MENU_CREATEAD(id);
-			return PLUGIN_HANDLED
 		}
 		case 101:
 		{
@@ -1378,9 +1295,7 @@ public MENU_CREATEAD_HANDLER(id, vmenu, item)
 			{
 				g_iSelectedMenu[id] = 0;
 			}
-			menu_destroy(vmenu)
 			MENU_AD_MENU_SELECT(id);
-			return PLUGIN_HANDLED
 		}
 		case 102:
 		{
@@ -1389,9 +1304,7 @@ public MENU_CREATEAD_HANDLER(id, vmenu, item)
 			{
 				g_iPlayerSelectID[id] = 0;
 			}
-			menu_destroy(vmenu)
 			MENU_CREATEAD(id);
-			return PLUGIN_HANDLED
 		}
 	}
 	menu_destroy(vmenu)
@@ -1447,21 +1360,16 @@ public MENU_CREATEAD(id)
 
 public AddToFullPack_Post(const handle, const e, const ent, const host, const hostflags, const bool:player, const pSet)
 {
-	if (!player && !SkipFullPack)
+	if (!player)
 	{
 		if (is_entity(ent))
 		{
 			new iEntTeam = get_entvar(ent, var_iuser2) - UNREAL_MDL_MAGIC_NUMBER;
-			if (iEntTeam >= 0 && iEntTeam <= 4)
+			if (iEntTeam >= 1 && iEntTeam <= 4)
 			{
-				new TeamName:entTeam = TeamName:(iEntTeam);
-				if (entTeam == TEAM_TERRORIST || entTeam == TEAM_CT ||
-					entTeam == TEAM_SPECTATOR)
+				if (g_iPlayerTeams[host] != iEntTeam)
 				{
-					if (g_iPlayerTeams[host] != entTeam)
-					{
-						set_es(handle, ES_Origin, Float:{-9999.0,-9999.0,-9999.0});
-					}
+					set_es(handle, ES_Origin, Float:{-9999.0,-9999.0,-9999.0});
 				}
 			}
 		}
@@ -1475,9 +1383,9 @@ public cache_player_teams(id)
 	get_players(mPlayers, mCount, "c");
 	for(new i = 0; i < mCount;i++)
 	{
-		if (is_user_hltv(mPlayers[i]))
+		if (is_user_hltv(mPlayers[i]) || !is_user_alive(mPlayers[i]))
 		{
-			g_iPlayerTeams[mPlayers[i]] = TEAM_SPECTATOR;
+			g_iPlayerTeams[mPlayers[i]] = 3;
 		}
 		else 
 		{
@@ -1528,7 +1436,7 @@ public plugin_precache()
 			get_entvar( pEnt, var_origin, vOrigin );
 			break;
 		}
-		//set_ad_lifetime_round(0,5.0);
+		//set_ad_lifetime(0,5);
 		//set_ad_origin(0,vOrigin);
 		//set_ad_rotate_speed(0,0.5);
 		//set_ad_rotatedir(0,1);
@@ -1697,8 +1605,11 @@ public create_one_ad(id)
 	
 	new Float:vUserData[3]; 
 	
-	vUserData[0] = get_ad_lifetime(id);
-	vUserData[1] = get_ad_lifetime_round(id);
+	if (get_ad_starttime(id) != 0)
+		set_entvar(pEnt,var_effects,get_entvar(pEnt,var_effects) + EF_NODRAW);
+	
+	vUserData[0] = float(get_ad_starttime(id));
+	vUserData[1] = float(get_ad_lifetime(id));
 	vUserData[2] = get_ad_rotate_speed(id);
 	 
 	set_entvar( pEnt, var_vuser1, vUserData);
@@ -1828,8 +1739,8 @@ public AD_THINK_WORKER( const pEnt )
 	new Float:vUserData3[3];
 	get_entvar(pEnt,var_vuser1,vUserData);
 		
-	new Float:fLife = vUserData[0];
-	new Float:fLifeRound = vUserData[1];
+	new iStartTime = floatround(vUserData[0]);
+	new iLifeRound = floatround(vUserData[1]);
 	
 	get_entvar(pEnt,var_vuser2,vUserData2);
 	get_entvar(pEnt,var_vuser3,vUserData3);
@@ -1975,22 +1886,26 @@ public AD_THINK_WORKER( const pEnt )
 		set_entvar(pEnt,var_velocity,vOrigin);
 	}
 	
-	if (fLife != 0.0 && fLife < get_gametime() - g_fMapStartTime)
+	if (iStartTime != 0)
+	{
+		new uEffFlags = get_entvar(pEnt,var_effects);
+		
+		if (uEffFlags & EF_NODRAW)
+		{
+			if (iStartTime > get_gametime() - g_fRoundStartTime)
+			{
+				set_entvar(pEnt,var_effects,uEffFlags - EF_NODRAW);
+			}
+		}
+	}
+	if (iLifeRound != 0 && iLifeRound < get_gametime() - g_fRoundStartTime)
 	{
 		set_entvar( pEnt, var_flags, FL_KILLME );
 		set_entvar( pEnt, var_nextthink, get_gametime( ));
 	}
 	else 
 	{
-		if (fLifeRound != 0.0 && fLifeRound < get_gametime() - g_fRoundStartTime)
-		{
-			set_entvar( pEnt, var_flags, FL_KILLME );
-			set_entvar( pEnt, var_nextthink, get_gametime( ));
-		}
-		else 
-		{
-			set_entvar( pEnt, var_nextthink, get_gametime( ) + 0.05 );
-		}
+		set_entvar( pEnt, var_nextthink, get_gametime( ) + 0.05 );
 	}
 }
 
@@ -2125,25 +2040,11 @@ public get_ad_team(id)
 	return json_object_get_number(g_jAdsList,static_ad_team);
 }
 
-public set_ad_team(id, any:team)
+public set_ad_team(id, team)
 {
 	formatex(static_ad_team,charsmax(static_ad_team),"%d_team",id)
 	json_object_set_number(g_jAdsList,static_ad_team, team);
 }
-
-new static_ad_lifetime[64];
-public Float:get_ad_lifetime(id)
-{
-	formatex(static_ad_lifetime,charsmax(static_ad_lifetime),"%d_lifetime",id)
-	return json_object_get_real(g_jAdsList,static_ad_lifetime);
-}
-
-public set_ad_lifetime(id, Float:lifetime)
-{
-	formatex(static_ad_lifetime,charsmax(static_ad_lifetime),"%d_lifetime",id)
-	json_object_set_real(g_jAdsList,static_ad_lifetime,lifetime);
-}
-
 
 new static_ad_framerate[64];
 public Float:get_ad_framerate(id)
@@ -2238,18 +2139,30 @@ public set_ad_move_speed(id, Float:rotspeed)
 	json_object_set_real(g_jAdsList,static_ad_move_speed,rotspeed);
 }
 
-
-new static_ad_lifetime_round[64];
-public Float:get_ad_lifetime_round(id)
+new static_ad_starttime[64];
+public get_ad_starttime(id)
 {
-	formatex(static_ad_lifetime_round,charsmax(static_ad_lifetime_round),"%d_lifetime_round",id)
-	return json_object_get_real(g_jAdsList,static_ad_lifetime_round);
+	formatex(static_ad_starttime,charsmax(static_ad_starttime),"%d_starttime",id)
+	return json_object_get_number(g_jAdsList,static_ad_starttime);
 }
 
-public set_ad_lifetime_round(id, Float:lifetime)
+public set_ad_starttime(id, starttime)
 {
-	formatex(static_ad_lifetime_round,charsmax(static_ad_lifetime_round),"%d_lifetime_round",id)
-	json_object_set_real(g_jAdsList,static_ad_lifetime_round,lifetime);
+	formatex(static_ad_starttime,charsmax(static_ad_starttime),"%d_starttime",id)
+	json_object_set_number(g_jAdsList,static_ad_starttime,starttime);
+}
+
+new static_ad_lifetime[64];
+public get_ad_lifetime(id)
+{
+	formatex(static_ad_lifetime,charsmax(static_ad_lifetime),"%d_lifetime",id)
+	return json_object_get_number(g_jAdsList,static_ad_lifetime);
+}
+
+public set_ad_lifetime(id, lifetime)
+{
+	formatex(static_ad_lifetime,charsmax(static_ad_lifetime),"%d_lifetime",id)
+	json_object_set_number(g_jAdsList,static_ad_lifetime,lifetime);
 }
 
 
