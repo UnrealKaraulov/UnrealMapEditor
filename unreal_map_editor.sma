@@ -8,7 +8,7 @@
 
 
 #define PLUGIN "Unreal Map Editor"
-#define VERSION "1.5"
+#define VERSION "1.6"
 #define AUTHOR "karaulov"
 
 
@@ -1396,7 +1396,6 @@ public cache_player_teams(id)
 
 public CSGameRules_RestartRound_Pre() 
 {
-	g_fRoundStartTime = get_gametime();
 	update_all_ads(0);
 }
 
@@ -1589,7 +1588,7 @@ public create_one_ad(id)
 	get_ad_origin(id,vOrigin);
 	new Float:vAngles[3];
 	get_ad_angles(id,vAngles);
-	set_entvar( pEnt, var_nextthink, get_gametime( ) );
+	set_entvar( pEnt, var_nextthink, get_gametime( ) + 0.075);
 	set_entvar( pEnt, var_origin, vOrigin );
 	set_entvar( pEnt, var_angles, vAngles );
 	set_entvar( pEnt, var_iuser1, engfunc(EngFunc_ModelFrames, pPrecacheId) - 1);
@@ -1611,7 +1610,7 @@ public create_one_ad(id)
 	vUserData[0] = float(get_ad_starttime(id));
 	vUserData[1] = float(get_ad_lifetime(id));
 	vUserData[2] = get_ad_rotate_speed(id);
-	 
+	
 	set_entvar( pEnt, var_vuser1, vUserData);
 	
 	vUserData[0] = get_ad_move_speed(id);
@@ -1622,8 +1621,7 @@ public create_one_ad(id)
 	vUserData[0] = float(get_ad_reversemovedir(id));
 	set_entvar( pEnt, var_vuser3, vUserData);
 	
-	
-	set_entvar( pEnt, var_movetype, MOVETYPE_FLYMISSILE);
+	set_entvar( pEnt, var_movetype, MOVETYPE_FOLLOW);
 	
 	if (equal(sModelType,"SPRITE"))
 	{
@@ -1635,7 +1633,7 @@ public create_one_ad(id)
 	{
 		set_entvar( pEnt, var_solid, SOLID_BSP);
 		set_entvar( pEnt, var_skin, CONTENTS_SOLID);
-		dllfunc( DLLFunc_Spawn, pEnt);
+		set_entvar( pEnt, var_flags, get_entvar(pEnt,var_flags) + FL_WORLDBRUSH);
 		SetThink( pEnt, "AD_THINK" );
 	}
 	else if (equal(sModelType,"BSPMODEL_LADDER"))
@@ -1643,7 +1641,7 @@ public create_one_ad(id)
 		rg_set_ent_rendering(pEnt, kRenderFxNone, Float:{255.0,255.0,255.0}, kRenderTransTexture, 255.0);
 		set_entvar( pEnt, var_solid, SOLID_BSP);
 		set_entvar( pEnt, var_skin, CONTENTS_SOLID);
-		dllfunc( DLLFunc_Spawn, pEnt);
+		set_entvar( pEnt, var_flags, get_entvar(pEnt,var_flags) + FL_WORLDBRUSH);
 		SetThink( pEnt, "AD_THINK" );
 		SetTouch(pEnt, "AD_TOUCH_LADDER");
 	}
@@ -1712,7 +1710,6 @@ public AD_TOUCH_LADDER(const ent, const other)
 
 public AD_THINK( const pEnt )
 {
-	set_entvar( pEnt, var_gravity, 0.0);
 	AD_THINK_WORKER(pEnt);
 }
 
@@ -1723,7 +1720,7 @@ public AD_THINK_SPRITE( const pEnt )
 	if (fFrameRate != 0.0 && iMaxFrames > 0)
 	{
 		new Float:fFrame = get_entvar(pEnt,var_frame);
-		new Float:fIncr = fFrameRate * 0.05;
+		new Float:fIncr = fFrameRate * 0.075;
 		if (fFrame > iMaxFrames)
 			fFrame = 0.0;
 		set_entvar(pEnt,var_frame,fFrame + fIncr);
@@ -1738,7 +1735,7 @@ public AD_THINK_WORKER( const pEnt )
 	new Float:vUserData2[3];
 	new Float:vUserData3[3];
 	get_entvar(pEnt,var_vuser1,vUserData);
-		
+	
 	new iStartTime = floatround(vUserData[0]);
 	new iLifeRound = floatround(vUserData[1]);
 	
@@ -1889,15 +1886,15 @@ public AD_THINK_WORKER( const pEnt )
 	if (iStartTime != 0)
 	{
 		new uEffFlags = get_entvar(pEnt,var_effects);
-		
 		if (uEffFlags & EF_NODRAW)
 		{
-			if (iStartTime > get_gametime() - g_fRoundStartTime)
+			if (iStartTime < get_gametime() - g_fRoundStartTime)
 			{
 				set_entvar(pEnt,var_effects,uEffFlags - EF_NODRAW);
 			}
 		}
 	}
+	
 	if (iLifeRound != 0 && iLifeRound < get_gametime() - g_fRoundStartTime)
 	{
 		set_entvar( pEnt, var_flags, FL_KILLME );
@@ -1905,7 +1902,7 @@ public AD_THINK_WORKER( const pEnt )
 	}
 	else 
 	{
-		set_entvar( pEnt, var_nextthink, get_gametime( ) + 0.05 );
+		set_entvar( pEnt, var_nextthink, get_gametime( ) + 0.075 );
 	}
 }
 
@@ -1945,6 +1942,7 @@ public unstuck_all(idx)
 
 public update_all_ads(idx)
 {
+	g_fRoundStartTime = get_gametime();
 	remove_all_ads();
 	if (task_exists(TASK_CREATE_ADS))
 	{
