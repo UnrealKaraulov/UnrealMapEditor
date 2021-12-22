@@ -8,7 +8,7 @@
 
 
 #define PLUGIN "Unreal Map Editor"
-#define VERSION "1.9"
+#define VERSION "1.20"
 #define AUTHOR "karaulov"
 
 #define TASK_THINK 10000
@@ -17,12 +17,16 @@
 #define TASK_SET_VELOCITY 4000
 #define TASK_RESET_VELOCITY 5000
 
+#define MAX_RES_PATH 64
+
+
 new JSON:g_jAdsList = Invalid_JSON;
-new g_sAdsPath[256];
+
+new g_sAdsPath[512];
 
 new g_iPrecachedModels = 0;
 
-new UNREAL_MDLS_DIRECTORY[] = "models/unreal_mdls";
+new UNREAL_MDLS_DIRECTORY[] = "models/umedit";
 new UNREAL_MDLS_CUSTOM_CLASSNAME[ ] = "unreal_mdl";
 
 new Float:g_fMapStartTime = 0.0;
@@ -31,7 +35,7 @@ new Float:g_fRoundStartTime = 0.0;
 new g_iPlayerTeams[33] = {0,...};
 new UNREAL_MDL_MAGIC_NUMBER = 20000;
 
-new UNREAL_MDL_MAX_MENUS = 9;
+new UNREAL_MDL_MAX_MENUS = 10;
 
 new UNREAL_MDL_ACCESS_LEVEL = ADMIN_BAN;
 
@@ -102,6 +106,15 @@ public search_next_ad(id)
 	if (g_iSelectedAd[id] >= get_ads_count())
 	{
 		g_iSelectedAd[id] = 0;
+	}
+	while (get_ad_precache(g_iSelectedAd[id]) < 0)
+	{
+		g_iSelectedAd[id]++;
+		if (g_iSelectedAd[id] >= get_ads_count())
+		{
+			g_iSelectedAd[id] = 0;
+			break;
+		}
 	}
 	new tmpMap[64];
 	get_ad_map(g_iSelectedAd[id],tmpMap,charsmax(tmpMap));
@@ -191,7 +204,7 @@ public MENU_DISABLEAD(id)
 		g_iSelectedAd[id] = 0;
 	}
 	
-	new tmpmodelpath[256];
+	new tmpmodelpath[MAX_RES_PATH];
 	get_ad_model(g_iSelectedAd[id],tmpmodelpath,charsmax(tmpmodelpath));
 
 	new tmpmenuitem[256];
@@ -278,7 +291,7 @@ public MENU_TEAMVISIBLE(id)
 		g_iSelectedAd[id] = 0;
 	}
 	
-	new tmpmodelpath[256];
+	new tmpmodelpath[MAX_RES_PATH];
 	get_ad_model(g_iSelectedAd[id],tmpmodelpath,charsmax(tmpmodelpath));
 
 	new tmpmenuitem[256];
@@ -401,7 +414,7 @@ public MENU_MOVEAD(id)
 		g_iSelectedAd[id] = 0;
 	}
 	
-	new tmpmodelpath[256];
+	new tmpmodelpath[MAX_RES_PATH];
 	get_ad_model(g_iSelectedAd[id],tmpmodelpath,charsmax(tmpmodelpath));
 
 	new tmpmenuitem[256];
@@ -514,7 +527,7 @@ public MENU_FRAMERATEAD(id)
 		g_iSelectedAd[id] = 0;
 	}
 	
-	new tmpmodelpath[256];
+	new tmpmodelpath[MAX_RES_PATH];
 	get_ad_model(g_iSelectedAd[id],tmpmodelpath,charsmax(tmpmodelpath));
 
 	new tmpmenuitem[256];
@@ -641,7 +654,7 @@ public MENU_DELAY_START_END_AD(id)
 		g_iSelectedAd[id] = 0;
 	}
 	
-	new tmpmodelpath[256];
+	new tmpmodelpath[MAX_RES_PATH];
 	get_ad_model(g_iSelectedAd[id],tmpmodelpath,charsmax(tmpmodelpath));
 
 	new tmpmenuitem[256];
@@ -668,6 +681,110 @@ public MENU_DELAY_START_END_AD(id)
 
 	
 	menu_setprop(vmenu, MPROP_EXITNAME, "\rВыйти из \w[\rTIMELIFE\w] меню")
+	menu_setprop(vmenu, MPROP_EXIT,MEXIT_ALL)
+
+	menu_display(id,vmenu,0)
+}
+
+public MENU_DELAY_ONLINE_AD_HANDLER(id, vmenu, item) 
+{
+	if(item == MENU_EXIT || !is_user_connected(id)) 
+	{
+		menu_destroy(vmenu)
+		return PLUGIN_HANDLED
+	}
+	
+	new data[6], iName[64], access, callback
+	menu_item_getinfo(vmenu, item, access, data, 5, iName, 63, callback)
+	     
+	new key = str_to_num(data)
+	switch(key) 
+	{	
+		case 1:
+		{
+			g_bIsShowTimePresents[id] = !g_bIsShowTimePresents[id];
+			MENU_AD_MENU_SELECT(id);
+		}
+		case 2:
+		{
+			if (g_bIsShowTimePresents[id])
+				set_ad_minonline(g_iSelectedAd[id],get_ad_minonline(g_iSelectedAd[id]) + 1);
+			else 
+				set_ad_maxonline(g_iSelectedAd[id],get_ad_maxonline(g_iSelectedAd[id]) + 1);
+			update_all_ads(id);
+			MENU_AD_MENU_SELECT(id);
+		}
+		case 3:
+		{
+			if (g_bIsShowTimePresents[id])
+				set_ad_minonline(g_iSelectedAd[id],get_ad_minonline(g_iSelectedAd[id]) - 1);
+			else 
+				set_ad_maxonline(g_iSelectedAd[id],get_ad_maxonline(g_iSelectedAd[id]) - 1);
+			update_all_ads(id);
+			MENU_AD_MENU_SELECT(id);
+		}
+		case 100:
+		{
+			search_next_ad(id);
+			MENU_AD_MENU_SELECT(id);
+		}
+		case 101:
+		{
+			search_next_ad(id);
+			MENU_AD_MENU_SELECT(id);
+		}
+		case 102:
+		{
+			g_iSelectedMenu[id]++;
+			if (g_iSelectedMenu[id] < 0 || g_iSelectedMenu[id] >= UNREAL_MDL_MAX_MENUS)
+			{
+				g_iSelectedMenu[id] = 0;
+			}
+			MENU_AD_MENU_SELECT(id);
+		}
+	}
+	menu_destroy(vmenu)
+	return PLUGIN_HANDLED
+}
+
+
+
+public MENU_DELAY_ONLINE_AD(id)
+{
+	if (get_ads_count_map() == 0)
+	{
+		client_print_color(id,print_team_red,"НЕТ ДОСТУПНОЙ РЕКЛАМЫ");
+		return ;
+	}
+	
+	if (g_iSelectedAd[id] < 0 || g_iSelectedAd[id] >= get_ads_count())
+	{
+		g_iSelectedAd[id] = 0;
+	}
+	
+	new tmpmodelpath[MAX_RES_PATH];
+	get_ad_model(g_iSelectedAd[id],tmpmodelpath,charsmax(tmpmodelpath));
+
+	new tmpmenuitem[256];
+	formatex(tmpmenuitem,charsmax(tmpmenuitem),"\r[\yMODEL ONLINE\r]^n%d=\r[\w%s\r]",g_iSelectedAd[id], tmpmodelpath);
+
+	new vmenu = menu_create(tmpmenuitem, "MENU_DELAY_ONLINE_AD_HANDLER")
+	
+		
+	menu_additem(vmenu, "\wСледующее меню","102")
+	menu_additem(vmenu, "\yСледующая модель","100")
+		
+	formatex(tmpmenuitem,charsmax(tmpmenuitem),"\w[\y%s\r] = [\r%i\w]", g_bIsShowTimePresents[id] ? "MIN ONLINE" : "MAX ONLINE", 
+												g_bIsShowTimePresents[id] ? get_ad_minonline(g_iSelectedAd[id]) : get_ad_maxonline(g_iSelectedAd[id]));
+		
+	menu_additem(vmenu, tmpmenuitem,"1")
+	
+	menu_additem(vmenu, "\wУвеличить [\r+1\w]","2")
+	
+	menu_additem(vmenu, "\wУменьшить [\r-1\w]","3")
+
+	
+	menu_setprop(vmenu, MPROP_EXITNAME, "\rВыйти из \w[\rONLINE\w] меню")
 	menu_setprop(vmenu, MPROP_EXIT,MEXIT_ALL)
 
 	menu_display(id,vmenu,0)
@@ -754,7 +871,7 @@ public MENU_SEQNUMAD(id)
 		return;
 	}
 	
-	new tmpmodelpath[256];
+	new tmpmodelpath[MAX_RES_PATH];
 	get_ad_model(g_iSelectedAd[id],tmpmodelpath,charsmax(tmpmodelpath));
 
 	new tmpmenuitem[256];
@@ -875,7 +992,7 @@ public MENU_ANGLEAD(id)
 		g_iSelectedAd[id] = 0;
 	}
 	
-	new tmpmodelpath[256];
+	new tmpmodelpath[MAX_RES_PATH];
 	get_ad_model(g_iSelectedAd[id],tmpmodelpath,charsmax(tmpmodelpath));
 
 	new tmpmenuitem[256];
@@ -994,7 +1111,7 @@ public MENU_ROTATEAD_SPEED(id)
 		g_iSelectedAd[id] = 0;
 	}
 	
-	new tmpmodelpath[256];
+	new tmpmodelpath[MAX_RES_PATH];
 	get_ad_model(g_iSelectedAd[id],tmpmodelpath,charsmax(tmpmodelpath));
 
 	new tmpmenuitem[256];
@@ -1131,7 +1248,7 @@ public MENU_MOVEAD_SPEED(id)
 		g_iSelectedAd[id] = 0;
 	}
 	
-	new tmpmodelpath[256];
+	new tmpmodelpath[MAX_RES_PATH];
 	get_ad_model(g_iSelectedAd[id],tmpmodelpath,charsmax(tmpmodelpath));
 
 	new tmpmenuitem[256];
@@ -1218,6 +1335,10 @@ public MENU_AD_MENU_SELECT(id)
 		{
 			MENU_ROTATEAD_SPEED(id);
 		}
+		else if(g_iSelectedMenu[id] == 8)
+		{
+			MENU_DELAY_ONLINE_AD(id);
+		}
 		else 
 		{
 			MENU_DELAY_START_END_AD(id);
@@ -1227,7 +1348,7 @@ public MENU_AD_MENU_SELECT(id)
 
 public CREATE_NEW_AD(id, adtype[])
 {
-	new tmpmodelpath[256];
+	new tmpmodelpath[MAX_RES_PATH];
 	precache_get_model(g_iPlayerSelectID[id],tmpmodelpath, charsmax(tmpmodelpath));
 	new ads = get_ads_count();
 	new Float:vOrigin[3];
@@ -1293,6 +1414,16 @@ public MENU_CREATEAD_HANDLER(id, vmenu, item)
 			CREATE_NEW_AD(id, "BSPMODEL_LADDER");
 			MENU_CREATEAD(id);
 		}
+		case 6:
+		{
+			CREATE_NEW_AD(id, "BSPMODEL_VEHICLE");
+			MENU_CREATEAD(id);
+		}
+		case 7:
+		{
+			CREATE_NEW_AD(id, "BSPMODEL_WATER");
+			MENU_CREATEAD(id);
+		}
 		case 101:
 		{
 			g_iSelectedMenu[id]++;
@@ -1333,7 +1464,7 @@ public MENU_CREATEAD(id)
 			g_iPlayerSelectID[id] = 0;
 		}
 		
-		new tmpmodelpath[256];
+		new tmpmodelpath[MAX_RES_PATH];
 		precache_get_model(g_iPlayerSelectID[id],tmpmodelpath, charsmax(tmpmodelpath));
 
 		new tmpmenuitem[256];
@@ -1355,6 +1486,10 @@ public MENU_CREATEAD(id)
 			menu_additem(vmenu, tmpmenuitem,"4")
 			formatex(tmpmenuitem,charsmax(tmpmenuitem),"\w[\r%s\w]", "Создать BSPMODEL_LADDER");
 			menu_additem(vmenu, tmpmenuitem,"5")
+			/*formatex(tmpmenuitem,charsmax(tmpmenuitem),"\w[\r%s\w]", "Создать BSPMODEL_VEHICLE");
+			menu_additem(vmenu, tmpmenuitem,"6")
+			formatex(tmpmenuitem,charsmax(tmpmenuitem),"\w[\r%s\w]", "Создать BSPMODEL_WATER");
+			menu_additem(vmenu, tmpmenuitem,"7")*/
 		}
 		
 		menu_setprop(vmenu, MPROP_EXITNAME, "\rВыйти из UNREAL AD меню")
@@ -1367,17 +1502,14 @@ public MENU_CREATEAD(id)
 
 public AddToFullPack_Post(const handle, const e, const ent, const host, const hostflags, const bool:player, const pSet)
 {
-	if (!player)
+	if (!player && pev_valid(ent))
 	{
-		if (is_entity(ent))
+		new iEntTeam = get_entvar(ent, var_iuser2) - UNREAL_MDL_MAGIC_NUMBER;
+		if (iEntTeam >= 1 && iEntTeam <= 4)
 		{
-			new iEntTeam = get_entvar(ent, var_iuser2) - UNREAL_MDL_MAGIC_NUMBER;
-			if (iEntTeam >= 1 && iEntTeam <= 4)
+			if (g_iPlayerTeams[host] != iEntTeam)
 			{
-				if (g_iPlayerTeams[host] != iEntTeam)
-				{
-					set_es(handle, ES_Origin, Float:{-9999.0,-9999.0,-9999.0});
-				}
+				set_es(handle, ES_Effects, EF_NODRAW);
 			}
 		}
 	}
@@ -1387,17 +1519,10 @@ public cache_player_teams(id)
 {
 	new mPlayers[32];
 	new mCount;
-	get_players(mPlayers, mCount, "c");
+	get_players(mPlayers, mCount);
 	for(new i = 0; i < mCount;i++)
 	{
-		if (is_user_hltv(mPlayers[i]) || !is_user_alive(mPlayers[i]))
-		{
-			g_iPlayerTeams[mPlayers[i]] = 3;
-		}
-		else 
-		{
-			g_iPlayerTeams[mPlayers[i]] = get_member(mPlayers[i], m_iTeam)
-		}
+		g_iPlayerTeams[mPlayers[i]] = get_member(mPlayers[i], m_iTeam)
 	}
 }
 
@@ -1416,6 +1541,16 @@ public plugin_end()
 
 public plugin_precache()
 {
+	new sndprecache[64];
+	for(new i = 1; i < 8; i++)
+	{
+		formatex(sndprecache,charsmax(sndprecache),"plats/vehicle%i.wav",i);
+		precache_sound(sndprecache);
+	}
+	precache_sound("plats/vehicle_brake1.wav");
+	precache_sound("plats/vehicle_start1.wav");
+	precache_event(1, "events/vehicle.sc");
+	
 	get_configsdir(g_sAdsPath, charsmax(g_sAdsPath));
 	add(g_sAdsPath, charsmax(g_sAdsPath), "/unreal_map_mdls.json");
 	
@@ -1457,7 +1592,7 @@ public plugin_precache()
 	{
 		if (get_ad_disabled(a_cnt) == 0)
 		{
-			new a_model[256];
+			new a_model[MAX_RES_PATH];
 			get_ad_model(a_cnt,a_model,charsmax(a_model));
 			new a_map[64];
 			get_ad_map(a_cnt,a_map,charsmax(a_map));
@@ -1475,6 +1610,7 @@ public plugin_precache()
 			}
 			else 
 			{
+				log_error(AMX_ERR_NONE, "[Unreal Map Editor] filename '%s' not found ", a_model);
 				set_ad_precache(a_cnt, -1)
 			}
 		}
@@ -1506,9 +1642,12 @@ public plugin_precache()
 			{
 				continue;
 			}
-			new a_model[256];
+			new a_model[MAX_RES_PATH];
 			formatex(a_model,charsmax(a_model),"%s/global/%s",UNREAL_MDLS_DIRECTORY,fileName);
-			add_precache_model(a_model);
+			if (file_exists(a_model))
+				add_precache_model(a_model);
+			else 
+				log_error(AMX_ERR_NONE, "[Unreal Map Editor] filename '%s' not found ", a_model);
 		}   
 		while ( next_file( handleDir, fileName, charsmax( fileName ) ) );
 		close_dir( handleDir );
@@ -1533,9 +1672,12 @@ public plugin_precache()
 			{
 				continue;
 			}
-			new a_model[256];
+			new a_model[MAX_RES_PATH];
 			formatex(a_model,charsmax(a_model),"%s/%s/%s",UNREAL_MDLS_DIRECTORY,g_sMapName,fileName);
-			add_precache_model(a_model);
+			if (file_exists(a_model))
+				add_precache_model(a_model);
+			else 
+				log_error(AMX_ERR_NONE, "[Unreal Map Editor] filename '%s' not found ", a_model);
 		}   
 		while ( next_file( handleDir, fileName, charsmax( fileName ) ) );
 		close_dir( handleDir );
@@ -1577,19 +1719,40 @@ public create_one_ad(id)
 	{
 		return;
 	}
+	
+	new mPlayers[32];
+	new mCount;
+	get_players(mPlayers, mCount, "h");
+	if (get_ad_maxonline(id) > 0 && mCount > get_ad_maxonline(id))
+	{
+		return;
+	}
+	
+	if (mCount < get_ad_minonline(id))
+	{
+		return;
+	}
+	
 	new pEnt = 0;
 
-	new sModelType[256];
+	new sModelType[MAX_RES_PATH];
 	get_ad_type(id,sModelType,charsmax(sModelType));
 	
-	pEnt = rg_create_entity( "func_rotating", .useHashTable = false );
+	if (equal(sModelType,"BSPMODEL_VEHICLE"))
+	{
+		pEnt = rg_create_entity( "func_vehicle", .useHashTable = false );
+	}
+	else  
+	{
+		pEnt = rg_create_entity( "func_rotating", .useHashTable = false );
+	}
 	
 	if( !pEnt )
 	{
 		return;
 	}
 	
-	new sModelPath[256];
+	new sModelPath[MAX_RES_PATH];
 	get_ad_model(id,sModelPath,charsmax(sModelPath));
 	
 	new Float:vOrigin[3];
@@ -1609,7 +1772,6 @@ public create_one_ad(id)
 	set_entvar( pEnt, var_model, sModelPath);
 	set_entvar( pEnt, var_modelindex, pPrecacheId);
 	set_entvar( pEnt, var_framerate, get_ad_framerate(id));
-	set_entvar( pEnt, var_v_angle,Float:{0.0,90.0,0.0});
 	
 	new Float:vUserData[3]; 
 	
@@ -1634,6 +1796,7 @@ public create_one_ad(id)
 		set_entvar( pEnt, var_solid, SOLID_NOT);
 		rg_set_ent_rendering(pEnt, kRenderFxNoDissipation, Float:{255.0,255.0,255.0}, kRenderTransAdd, 255.0);
 		SetThinkEx( pEnt, "AD_THINK_SPRITE" );
+		SetThink( pEnt, "EMPTY_THINK" );
 	}
 	else if (equal(sModelType,"BSPMODEL_SOLID"))
 	{
@@ -1641,6 +1804,7 @@ public create_one_ad(id)
 		set_entvar( pEnt, var_skin, CONTENTS_SOLID);
 		dllfunc( DLLFunc_Spawn, pEnt);
 		SetThinkEx( pEnt, "AD_THINK" );
+		SetThink( pEnt, "EMPTY_THINK" );
 	}
 	else if (equal(sModelType,"MODEL_SOLID"))
 	{
@@ -1658,12 +1822,31 @@ public create_one_ad(id)
 		set_entvar( pEnt, var_skin, CONTENTS_SOLID);
 		dllfunc( DLLFunc_Spawn, pEnt);
 		SetThinkEx( pEnt, "AD_THINK" );
-		SetTouch(pEnt, "AD_TOUCH_LADDER");
+		//SetTouch(pEnt, "AD_TOUCH_LADDER");
+	}
+	else if (equal(sModelType,"BSPMODEL_VEHICLE"))
+	{
+		set_entvar( pEnt, var_solid, SOLID_BSP);
+		set_entvar( pEnt, var_skin, CONTENTS_SOLID);
+		dllfunc( DLLFunc_Spawn, pEnt);
+		SetThinkEx( pEnt, "AD_THINK" );
+	}
+	else if (equal(sModelType,"BSPMODEL_WATER"))
+	{
+		set_entvar( pEnt, var_solid, SOLID_TRIGGER);
+		set_entvar( pEnt, var_skin, CONTENTS_WATER);
+		set_entvar( pEnt, var_movetype, MOVETYPE_PUSH);
+		dllfunc( DLLFunc_Spawn, pEnt);
+		set_entvar( pEnt, var_solid, SOLID_TRIGGER);
+		set_entvar( pEnt, var_skin, CONTENTS_WATER);
+		set_entvar( pEnt, var_movetype, MOVETYPE_PUSH);
+		SetThinkEx( pEnt, "AD_THINK" );
 	}
 	else 
 	{
 		set_entvar( pEnt, var_solid, SOLID_NOT);
 		SetThinkEx( pEnt, "AD_THINK" );
+		SetThink( pEnt, "EMPTY_THINK" );
 	}
 	
 	set_entvar( pEnt, var_iuser3, get_entvar(pEnt,var_solid));
@@ -1676,7 +1859,7 @@ public create_one_ad(id)
 	set_entvar( pEnt, var_classname, UNREAL_MDLS_CUSTOM_CLASSNAME );
 	
 	entity_set_origin( pEnt, vOrigin);
-	SetThink( pEnt, "EMPTY_THINK" );
+	
 }
 
 public EMPTY_THINK(id)
@@ -2040,7 +2223,7 @@ public set_ad_type(id, str[])
 	json_object_set_string(g_jAdsList,static_ad_type,str);
 }
 
-new static_ad_model[256];
+new static_ad_model[MAX_RES_PATH];
 public get_ad_model(id, str[],len)
 {
 	formatex(static_ad_model,charsmax(static_ad_model),"%d_MODEL",id)
@@ -2157,6 +2340,32 @@ public set_ad_rotate_speed(id, Float:rotspeed)
 	json_object_set_real(g_jAdsList,static_ad_rotate_speed,rotspeed);
 }
 
+new static_ad_minonline[64];
+public get_ad_minonline(id)
+{
+	formatex(static_ad_minonline,charsmax(static_ad_minonline),"%d_minonline",id)
+	return json_object_get_number(g_jAdsList,static_ad_minonline);
+}
+
+public set_ad_minonline(id, minonline)
+{
+	formatex(static_ad_minonline,charsmax(static_ad_minonline),"%d_minonline",id)
+	json_object_set_number(g_jAdsList,static_ad_minonline,minonline);
+}
+
+new static_ad_maxonline[64];
+public get_ad_maxonline(id)
+{
+	formatex(static_ad_maxonline,charsmax(static_ad_maxonline),"%d_maxonline",id)
+	return json_object_get_number(g_jAdsList,static_ad_maxonline);
+}
+
+public set_ad_maxonline(id, maxonline)
+{
+	formatex(static_ad_maxonline,charsmax(static_ad_maxonline),"%d_maxonline",id)
+	json_object_set_number(g_jAdsList,static_ad_maxonline,maxonline);
+}
+
 
 new static_ad_movedir[64];
 public get_ad_movedir(id)
@@ -2270,7 +2479,7 @@ public set_ad_angles(id, Float:angles[3])
 
 new static_precache_name[64];
 new static_precache_id[64];
-new static_precache_path[256];
+new static_precache_path[MAX_RES_PATH];
 public add_precache_model(mdl[])
 {
 	new return_value = 0;
@@ -2309,7 +2518,7 @@ public precache_get_model(id,str[],len)
 
 stock is_player_stuck(id,Float:originF[3])
 {
-	engfunc(EngFunc_TraceHull, originF, originF, 0, (pev(id, pev_flags) & FL_DUCKING) ? HULL_HEAD : HULL_HUMAN, id, 0)
+	engfunc(EngFunc_TraceHull, originF, originF, 0, (get_entvar(id, var_flags) & FL_DUCKING) ? HULL_HEAD : HULL_HUMAN, id, 0)
 	
 	if (get_tr2(0, TR_StartSolid) || get_tr2(0, TR_AllSolid) || !get_tr2(0, TR_InOpen))
 		return true
@@ -2331,9 +2540,9 @@ stock is_hull_vacant(Float:origin[3], hull)
 public unstuckplayer(id)
 {
 	static Float:Origin[3]
-	pev(id, pev_origin, Origin)
+	get_entvar(id, var_origin, Origin)
 	static iHull, iSpawnPoint, i
-	iHull = (pev(id, pev_flags) & FL_DUCKING) ? HULL_HEAD : HULL_HUMAN
+	iHull = (get_entvar(id, var_flags) & FL_DUCKING) ? HULL_HEAD : HULL_HUMAN
 	
 	// fast unstuck 
 	if(is_player_stuck(id,Origin))
@@ -2371,7 +2580,7 @@ public unstuckplayer(id)
 		}
 		
 		new Float:flOrigin[3], Float:flOriginFinal[3], iSize
-		pev(id, pev_origin, flOrigin)
+		get_entvar(id, var_origin, flOrigin)
 		iSize = sizeof(RANDOM_OWN_PLACE)
 		
 		iSpawnPoint = random_num(0, iSize - 1)
