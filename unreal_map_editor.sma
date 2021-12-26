@@ -33,7 +33,7 @@ new Float:g_fMapStartTime = 0.0;
 new Float:g_fRoundStartTime = 0.0;
 
 new g_iPlayerTeams[33] = {0,...};
-new UNREAL_MDL_MAGIC_NUMBER = 20000;
+new UNREAL_MDL_MAGIC_NUMBER = 200000;
 
 new UNREAL_MDL_MAX_MENUS = 10;
 
@@ -67,6 +67,7 @@ public plugin_init()
 	
 	update_all_ads(0);
 }
+
 
 public CBasePlayer_Spawn_Post(const id) 
 {
@@ -1111,6 +1112,20 @@ public MENU_ROTATEAD_SPEED(id)
 		g_iSelectedAd[id] = 0;
 	}
 	
+	new sModelType[MAX_RES_PATH];
+	get_ad_type(g_iSelectedAd[id],sModelType,charsmax(sModelType));
+	
+	if (containi(sModelType,"bsp") != -1)
+	{
+		g_iSelectedMenu[id]++;
+		if (g_iSelectedMenu[id] < 0 || g_iSelectedMenu[id] >= UNREAL_MDL_MAX_MENUS)
+		{
+			g_iSelectedMenu[id] = 0;
+		}
+		MENU_AD_MENU_SELECT(id);
+		return;
+	}
+	
 	new tmpmodelpath[MAX_RES_PATH];
 	get_ad_model(g_iSelectedAd[id],tmpmodelpath,charsmax(tmpmodelpath));
 
@@ -1246,6 +1261,20 @@ public MENU_MOVEAD_SPEED(id)
 	if (g_iSelectedAd[id] < 0 || g_iSelectedAd[id] >= get_ads_count())
 	{
 		g_iSelectedAd[id] = 0;
+	}
+	
+	new sModelType[MAX_RES_PATH];
+	get_ad_type(g_iSelectedAd[id],sModelType,charsmax(sModelType));
+	
+	if (containi(sModelType,"bsp") != -1)
+	{
+		g_iSelectedMenu[id]++;
+		if (g_iSelectedMenu[id] < 0 || g_iSelectedMenu[id] >= UNREAL_MDL_MAX_MENUS)
+		{
+			g_iSelectedMenu[id] = 0;
+		}
+		MENU_AD_MENU_SELECT(id);
+		return;
 	}
 	
 	new tmpmodelpath[MAX_RES_PATH];
@@ -1507,9 +1536,10 @@ public AddToFullPack_Post(const handle, const e, const ent, const host, const ho
 		new iEntTeam = get_entvar(ent, var_iuser2) - UNREAL_MDL_MAGIC_NUMBER;
 		if (iEntTeam >= 1 && iEntTeam <= 4)
 		{
-			if (g_iPlayerTeams[host] != iEntTeam)
+			new effects = get_es(handle, ES_Effects);
+			if (g_iPlayerTeams[host] != iEntTeam && !(effects & EF_NODRAW))
 			{
-				set_es(handle, ES_Effects, EF_NODRAW);
+				set_es(handle, ES_Effects, effects + EF_NODRAW);
 			}
 		}
 	}
@@ -1744,7 +1774,7 @@ public create_one_ad(id)
 	}
 	else  
 	{
-		pEnt = rg_create_entity( "func_rotating", .useHashTable = false );
+		pEnt = rg_create_entity( "func_wall", .useHashTable = false );
 	}
 	
 	if( !pEnt )
@@ -1755,22 +1785,21 @@ public create_one_ad(id)
 	new sModelPath[MAX_RES_PATH];
 	get_ad_model(id,sModelPath,charsmax(sModelPath));
 	
+	set_entvar( pEnt, var_model, sModelPath);
+	set_entvar( pEnt, var_modelindex, pPrecacheId);
+	dllfunc( DLLFunc_Spawn, pEnt);
+	set_entvar( pEnt, var_flags,get_entvar(pEnt, var_flags) - FL_WORLDBRUSH);
+	
+	
 	new Float:vOrigin[3];
 	get_ad_origin(id,vOrigin);
 	new Float:vAngles[3];
 	get_ad_angles(id,vAngles);
-	set_entvar( pEnt, var_nextthink, get_gametime( ) + 0.075);
 	set_entvar( pEnt, var_origin, vOrigin );
-	entity_set_origin( pEnt, vOrigin);
 	set_entvar( pEnt, var_angles, vAngles );
-	set_entvar( pEnt, var_iuser1, engfunc(EngFunc_ModelFrames, pPrecacheId) - 1);
+	set_entvar( pEnt, var_iuser1, containi(sModelPath,".spr") != -1 ? (engfunc(EngFunc_ModelFrames, pPrecacheId) - 1) : 0);
 	set_entvar( pEnt, var_iuser2, get_ad_team(id) + UNREAL_MDL_MAGIC_NUMBER);
-	set_entvar( pEnt, var_animtime, get_gametime( ) );
-	set_entvar( pEnt, var_scale, 1.0);
 	set_entvar( pEnt, var_sequence, get_ad_sequence(id));
-	set_entvar( pEnt, var_gaitsequence, get_ad_sequence(id));
-	set_entvar( pEnt, var_model, sModelPath);
-	set_entvar( pEnt, var_modelindex, pPrecacheId);
 	set_entvar( pEnt, var_framerate, get_ad_framerate(id));
 	
 	new Float:vUserData[3]; 
@@ -1781,7 +1810,7 @@ public create_one_ad(id)
 	
 	set_entvar( pEnt, var_vuser1, vUserData);
 	
-	vUserData[0] = get_ad_move_speed(id);
+	vUserData[0] = get_ad_move_speed(id) * 10.0;
 	vUserData[1] = float(get_ad_rotatedir(id));
 	vUserData[2] = float(get_ad_movedir(id));
 	
@@ -1789,22 +1818,18 @@ public create_one_ad(id)
 	vUserData[0] = float(get_ad_reversemovedir(id));
 	set_entvar( pEnt, var_vuser3, vUserData);
 	
-	set_entvar( pEnt, var_movetype, MOVETYPE_FLYMISSILE);
+	set_entvar( pEnt, var_movetype, MOVETYPE_FLY);
+	
+	
+	set_entvar( pEnt, var_classname, UNREAL_MDLS_CUSTOM_CLASSNAME );
+	entity_set_origin( pEnt, vOrigin);
+	SetThink( pEnt, "EMPTY_THINK" );
 	
 	if (equal(sModelType,"SPRITE"))
 	{
 		set_entvar( pEnt, var_solid, SOLID_NOT);
 		rg_set_ent_rendering(pEnt, kRenderFxNoDissipation, Float:{255.0,255.0,255.0}, kRenderTransAdd, 255.0);
 		SetThinkEx( pEnt, "AD_THINK_SPRITE" );
-		SetThink( pEnt, "EMPTY_THINK" );
-	}
-	else if (equal(sModelType,"BSPMODEL_SOLID"))
-	{
-		set_entvar( pEnt, var_solid, SOLID_BSP);
-		set_entvar( pEnt, var_skin, CONTENTS_SOLID);
-		dllfunc( DLLFunc_Spawn, pEnt);
-		SetThinkEx( pEnt, "AD_THINK" );
-		SetThink( pEnt, "EMPTY_THINK" );
 	}
 	else if (equal(sModelType,"MODEL_SOLID"))
 	{
@@ -1815,28 +1840,32 @@ public create_one_ad(id)
 		set_entvar( pEnt, var_absmax, Float:{32.0,32.0,32.0});
 		SetThinkEx( pEnt, "AD_THINK" );
 	}
+	else if (equal(sModelType,"BSPMODEL_SOLID"))
+	{
+		set_entvar( pEnt, var_solid, SOLID_BSP);
+		set_entvar( pEnt, var_movetype, MOVETYPE_PUSH);
+		set_entvar( pEnt, var_skin, CONTENTS_SOLID);
+		SetThinkEx( pEnt, "AD_THINK" );
+		set_entvar( pEnt, var_flags,get_entvar(pEnt, var_flags) + FL_WORLDBRUSH);
+	}
 	else if (equal(sModelType,"BSPMODEL_LADDER"))
 	{
 		rg_set_ent_rendering(pEnt, kRenderFxNone, Float:{255.0,255.0,255.0}, kRenderTransTexture, 255.0);
 		set_entvar( pEnt, var_solid, SOLID_BSP);
+		set_entvar( pEnt, var_movetype, MOVETYPE_PUSH);
 		set_entvar( pEnt, var_skin, CONTENTS_SOLID);
-		dllfunc( DLLFunc_Spawn, pEnt);
 		SetThinkEx( pEnt, "AD_THINK" );
-		//SetTouch(pEnt, "AD_TOUCH_LADDER");
+		SetTouch(pEnt, "AD_TOUCH_LADDER");
+		set_entvar( pEnt, var_flags,get_entvar(pEnt, var_flags) + FL_WORLDBRUSH);
 	}
 	else if (equal(sModelType,"BSPMODEL_VEHICLE"))
 	{
-		set_entvar( pEnt, var_solid, SOLID_BSP);
+		set_entvar( pEnt, var_solid, SOLID_NOT);
 		set_entvar( pEnt, var_skin, CONTENTS_SOLID);
-		dllfunc( DLLFunc_Spawn, pEnt);
 		SetThinkEx( pEnt, "AD_THINK" );
 	}
 	else if (equal(sModelType,"BSPMODEL_WATER"))
 	{
-		set_entvar( pEnt, var_solid, SOLID_TRIGGER);
-		set_entvar( pEnt, var_skin, CONTENTS_WATER);
-		set_entvar( pEnt, var_movetype, MOVETYPE_PUSH);
-		dllfunc( DLLFunc_Spawn, pEnt);
 		set_entvar( pEnt, var_solid, SOLID_TRIGGER);
 		set_entvar( pEnt, var_skin, CONTENTS_WATER);
 		set_entvar( pEnt, var_movetype, MOVETYPE_PUSH);
@@ -1846,7 +1875,6 @@ public create_one_ad(id)
 	{
 		set_entvar( pEnt, var_solid, SOLID_NOT);
 		SetThinkEx( pEnt, "AD_THINK" );
-		SetThink( pEnt, "EMPTY_THINK" );
 	}
 	
 	set_entvar( pEnt, var_iuser3, get_entvar(pEnt,var_solid));
@@ -1855,10 +1883,6 @@ public create_one_ad(id)
 		set_entvar( pEnt, var_solid, SOLID_NOT);
 		set_entvar( pEnt, var_effects, get_entvar(pEnt,var_effects) + EF_NODRAW);
 	}
-	
-	set_entvar( pEnt, var_classname, UNREAL_MDLS_CUSTOM_CLASSNAME );
-	
-	entity_set_origin( pEnt, vOrigin);
 	
 }
 
@@ -2121,6 +2145,7 @@ public AD_THINK_WORKER( const pEnt )
 		}
 		else 
 			vOrigin[iMoveDir] = fMoveSpeed;
+
 		set_entvar(pEnt,var_velocity,vOrigin);
 	}
 	
@@ -2131,7 +2156,7 @@ public AD_THINK_WORKER( const pEnt )
 		{
 			if (iStartTime < get_gametime() - g_fRoundStartTime)
 			{
-				set_entvar(pEnt,var_effects,uEffFlags - EF_NODRAW);
+				set_entvar(pEnt,var_effects, uEffFlags - EF_NODRAW);
 				set_entvar(pEnt,var_solid, get_entvar(pEnt,var_iuser3));
 				set_task_ex(0.2, "unstuck_all", .id = TASK_UNSTUCK);
 			}
@@ -2141,12 +2166,8 @@ public AD_THINK_WORKER( const pEnt )
 	if (iLifeRound != 0 && iLifeRound < get_gametime() - g_fRoundStartTime)
 	{
 		RemoveThinkEx( pEnt );
-		set_entvar( pEnt, var_flags, FL_KILLME );
 		set_entvar( pEnt, var_nextthink, get_gametime( ));
-	}
-	else 
-	{
-		set_entvar( pEnt, var_nextthink, get_gametime( ) + 0.075 );
+		set_entvar( pEnt, var_flags, FL_KILLME );
 	}
 }
 
@@ -2480,6 +2501,7 @@ public set_ad_angles(id, Float:angles[3])
 new static_precache_name[64];
 new static_precache_id[64];
 new static_precache_path[MAX_RES_PATH];
+
 public add_precache_model(mdl[])
 {
 	new return_value = 0;
@@ -2489,7 +2511,9 @@ public add_precache_model(mdl[])
 		formatex(static_precache_id,charsmax(static_precache_id),"MDL_%d_precacheId",i)
 		json_object_get_string(g_jAdsList,static_precache_name,static_precache_path,charsmax(static_precache_path));
 		if (equal(mdl,static_precache_path))
+		{
 			return json_object_get_number(g_jAdsList,static_precache_id)
+		}
 		i--;
 	}
 	
@@ -2497,7 +2521,6 @@ public add_precache_model(mdl[])
 	formatex(static_precache_id,charsmax(static_precache_id),"MDL_%d_precacheId",g_iPrecachedModels)
 	
 	return_value = precache_model(mdl);
-	
 	json_object_set_string(g_jAdsList,static_precache_name,mdl);
 	json_object_set_number(g_jAdsList,static_precache_id,return_value);
 	
