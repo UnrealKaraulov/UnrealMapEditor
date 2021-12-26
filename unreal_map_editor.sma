@@ -8,7 +8,7 @@
 
 
 #define PLUGIN "Unreal Map Editor"
-#define VERSION "1.20"
+#define VERSION "1.21"
 #define AUTHOR "karaulov"
 
 #define TASK_THINK 10000
