@@ -1533,7 +1533,7 @@ public AddToFullPack_Post(const handle, const e, const ent, const host, const ho
 {
 	if (!player && pev_valid(ent))
 	{
-		new iEntTeam = get_entvar(ent, var_iuser2) - UNREAL_MDL_MAGIC_NUMBER;
+		new iEntTeam = floatround(get_entvar(ent, var_fuser2)) - UNREAL_MDL_MAGIC_NUMBER;
 		if (iEntTeam >= 1 && iEntTeam <= 4)
 		{
 			new effects = get_es(handle, ES_Effects);
@@ -1797,8 +1797,8 @@ public create_one_ad(id)
 	get_ad_angles(id,vAngles);
 	set_entvar( pEnt, var_origin, vOrigin );
 	set_entvar( pEnt, var_angles, vAngles );
-	set_entvar( pEnt, var_iuser1, containi(sModelPath,".spr") != -1 ? (engfunc(EngFunc_ModelFrames, pPrecacheId) - 1) : 0);
-	set_entvar( pEnt, var_iuser2, get_ad_team(id) + UNREAL_MDL_MAGIC_NUMBER);
+	set_entvar( pEnt, var_fuser4, float(containi(sModelPath,".spr") != -1 ? (engfunc(EngFunc_ModelFrames, pPrecacheId) - 1) : 0));
+	set_entvar( pEnt, var_fuser2, float(get_ad_team(id) + UNREAL_MDL_MAGIC_NUMBER));
 	set_entvar( pEnt, var_sequence, get_ad_sequence(id));
 	set_entvar( pEnt, var_framerate, get_ad_framerate(id));
 	
@@ -1808,7 +1808,7 @@ public create_one_ad(id)
 	vUserData[1] = float(get_ad_lifetime(id));
 	vUserData[2] = get_ad_rotate_speed(id);
 	
-	set_entvar( pEnt, var_vuser1, vUserData);
+	set_entvar( pEnt, var_vuser4, vUserData);
 	
 	vUserData[0] = get_ad_move_speed(id) * 10.0;
 	vUserData[1] = float(get_ad_rotatedir(id));
@@ -1877,7 +1877,7 @@ public create_one_ad(id)
 		SetThinkEx( pEnt, "AD_THINK" );
 	}
 	
-	set_entvar( pEnt, var_iuser3, get_entvar(pEnt,var_solid));
+	set_entvar( pEnt, var_fuser3, float(get_entvar(pEnt,var_solid)));
 	if (get_ad_starttime(id) != 0)
 	{
 		set_entvar( pEnt, var_solid, SOLID_NOT);
@@ -1901,21 +1901,19 @@ public RemoveThinkEx(id)
 
 public SetThinkEx(id,thinkname[])
 {
-	set_task_ex(0.075, thinkname, .id = TASK_THINK+id,.flags = SetTask_Repeat);
+	set_task_ex(0.075, thinkname, .id = TASK_THINK+id, .flags = SetTask_Repeat);
 }
 
 public reset_velocity(idx)
 {
 	new other = idx - TASK_RESET_VELOCITY;
-	if (is_user_connected(other) && is_user_alive(other))
+	if (is_user_connected(other))
 	{
 		set_entvar(other, var_basevelocity,Float:{0.0,0.0,0.0});
-		set_entvar(other, var_velocity,Float:{0.0,0.0,0.0});
 		if (task_exists(TASK_SET_VELOCITY+other))
 		{
 			remove_task(TASK_SET_VELOCITY+other);
 		}
-		set_entvar(other, var_movetype,MOVETYPE_WALK);
 		unstuckplayer(other);
 	}
 }
@@ -1947,14 +1945,14 @@ public AD_TOUCH_LADDER(const ent, const other)
 	if (other > 0 && other < 33)
 	{
 		set_entvar(other,var_basevelocity,Float:{0.0,0.0,20.0});
-		if (task_exists(TASK_RESET_VELOCITY+other))
+		if (task_exists(TASK_RESET_VELOCITY + other))
 		{
-			remove_task(TASK_RESET_VELOCITY+other);
+			remove_task(TASK_RESET_VELOCITY + other);
 		}
-		set_task_ex(0.1, "reset_velocity", .id = TASK_RESET_VELOCITY+other);
+		set_task_ex(1.0, "reset_velocity", .id = TASK_RESET_VELOCITY + other);
 		if (!task_exists(TASK_SET_VELOCITY+other))
 		{
-			set_task_ex(0.2, "set_velocity", .id = TASK_SET_VELOCITY+other,.flags = SetTask_Repeat);
+			set_task_ex(0.2, "set_velocity", .id = TASK_SET_VELOCITY + other,.flags = SetTask_Repeat);
 		}
 	}
 }
@@ -1979,7 +1977,7 @@ public AD_THINK_SPRITE( const pEntTask )
 	}
 	new pEnt = pEntTask - TASK_THINK;	
 	new Float:fFrameRate = get_entvar(pEnt,var_framerate);
-	new iMaxFrames = get_entvar(pEnt,var_iuser1);
+	new iMaxFrames = floatround(get_entvar(pEnt,var_fuser4));
 	if (fFrameRate != 0.0 && iMaxFrames > 0)
 	{
 		new Float:fFrame = get_entvar(pEnt,var_frame);
@@ -1997,7 +1995,7 @@ public AD_THINK_WORKER( const pEnt )
 	new Float:vUserData[3];
 	new Float:vUserData2[3];
 	new Float:vUserData3[3];
-	get_entvar(pEnt,var_vuser1,vUserData);
+	get_entvar(pEnt,var_vuser4,vUserData);
 	
 	new iStartTime = floatround(vUserData[0]);
 	new iLifeRound = floatround(vUserData[1]);
@@ -2061,7 +2059,7 @@ public AD_THINK_WORKER( const pEnt )
 		vOrigin3[1] != fMoveSpeed &&
 		vOrigin3[2] != fMoveSpeed)
 		{
-			set_entvar(pEnt,var_solid,get_entvar(pEnt,var_iuser3));
+			set_entvar(pEnt,var_solid,floatround(get_entvar(pEnt,var_fuser3)));
 			get_entvar(pEnt,var_origin,vOrigin);
 			get_entvar(pEnt,var_oldorigin,vOrigin2);
 			if (get_distance_f(vOrigin,vOrigin2) < 0.5)
@@ -2157,7 +2155,7 @@ public AD_THINK_WORKER( const pEnt )
 			if (iStartTime < get_gametime() - g_fRoundStartTime)
 			{
 				set_entvar(pEnt,var_effects, uEffFlags - EF_NODRAW);
-				set_entvar(pEnt,var_solid, get_entvar(pEnt,var_iuser3));
+				set_entvar(pEnt,var_solid, floatround(get_entvar(pEnt,var_fuser3)));
 				set_task_ex(0.2, "unstuck_all", .id = TASK_UNSTUCK);
 			}
 		}
