@@ -8,7 +8,7 @@
 
 
 #define PLUGIN "Unreal Map Editor"
-#define VERSION "1.21"
+#define VERSION "1.3"
 #define AUTHOR "karaulov"
 
 #define TASK_THINK 10000
@@ -49,7 +49,7 @@ public plugin_init()
 	
 	//https://www.gametracker.com/search/?search_by=server_variable&search_by2=unreal_ads&query=&loc=_all&sort=&order=
 	//https://gs-monitor.com/?searchType=2&variableName=unreal_ads&variableValue=&submit=&mode=
-	create_cvar("unreal_ads", VERSION, FCVAR_SERVER | FCVAR_SPONLY);
+	register_cvar("unreal_ads", VERSION, FCVAR_SERVER | FCVAR_SPONLY);
 
 	RegisterHookChain(RG_CSGameRules_RestartRound, "CSGameRules_RestartRound_Pre");
 	register_forward(FM_AddToFullPack, "AddToFullPack_Post", ._post = true);
@@ -1443,11 +1443,6 @@ public MENU_CREATEAD_HANDLER(id, vmenu, item)
 			CREATE_NEW_AD(id, "BSPMODEL_LADDER");
 			MENU_CREATEAD(id);
 		}
-		case 6:
-		{
-			CREATE_NEW_AD(id, "BSPMODEL_VEHICLE");
-			MENU_CREATEAD(id);
-		}
 		case 7:
 		{
 			CREATE_NEW_AD(id, "BSPMODEL_WATER");
@@ -1515,9 +1510,7 @@ public MENU_CREATEAD(id)
 			menu_additem(vmenu, tmpmenuitem,"4")
 			formatex(tmpmenuitem,charsmax(tmpmenuitem),"\w[\r%s\w]", "Создать BSPMODEL_LADDER");
 			menu_additem(vmenu, tmpmenuitem,"5")
-			/*formatex(tmpmenuitem,charsmax(tmpmenuitem),"\w[\r%s\w]", "Создать BSPMODEL_VEHICLE");
-			menu_additem(vmenu, tmpmenuitem,"6")
-			formatex(tmpmenuitem,charsmax(tmpmenuitem),"\w[\r%s\w]", "Создать BSPMODEL_WATER");
+			/*formatex(tmpmenuitem,charsmax(tmpmenuitem),"\w[\r%s\w]", "Создать BSPMODEL_WATER");
 			menu_additem(vmenu, tmpmenuitem,"7")*/
 		}
 		
@@ -1533,7 +1526,7 @@ public AddToFullPack_Post(const handle, const e, const ent, const host, const ho
 {
 	if (!player && pev_valid(ent))
 	{
-		new iEntTeam = floatround(get_entvar(ent, var_fuser2)) - UNREAL_MDL_MAGIC_NUMBER;
+		new iEntTeam = get_entvar(ent, var_iuser2) - UNREAL_MDL_MAGIC_NUMBER;
 		if (iEntTeam >= 1 && iEntTeam <= 4)
 		{
 			new effects = get_es(handle, ES_Effects);
@@ -1571,16 +1564,6 @@ public plugin_end()
 
 public plugin_precache()
 {
-	new sndprecache[64];
-	for(new i = 1; i < 8; i++)
-	{
-		formatex(sndprecache,charsmax(sndprecache),"plats/vehicle%i.wav",i);
-		precache_sound(sndprecache);
-	}
-	precache_sound("plats/vehicle_brake1.wav");
-	precache_sound("plats/vehicle_start1.wav");
-	precache_event(1, "events/vehicle.sc");
-	
 	get_configsdir(g_sAdsPath, charsmax(g_sAdsPath));
 	add(g_sAdsPath, charsmax(g_sAdsPath), "/unreal_map_mdls.json");
 	
@@ -1768,14 +1751,7 @@ public create_one_ad(id)
 	new sModelType[MAX_RES_PATH];
 	get_ad_type(id,sModelType,charsmax(sModelType));
 	
-	if (equal(sModelType,"BSPMODEL_VEHICLE"))
-	{
-		pEnt = rg_create_entity( "func_vehicle", .useHashTable = false );
-	}
-	else  
-	{
-		pEnt = rg_create_entity( "func_wall", .useHashTable = false );
-	}
+	pEnt = rg_create_entity( "func_wall", .useHashTable = false );
 	
 	if( !pEnt )
 	{
@@ -1797,8 +1773,8 @@ public create_one_ad(id)
 	get_ad_angles(id,vAngles);
 	set_entvar( pEnt, var_origin, vOrigin );
 	set_entvar( pEnt, var_angles, vAngles );
-	set_entvar( pEnt, var_fuser4, float(containi(sModelPath,".spr") != -1 ? (engfunc(EngFunc_ModelFrames, pPrecacheId) - 1) : 0));
-	set_entvar( pEnt, var_fuser2, float(get_ad_team(id) + UNREAL_MDL_MAGIC_NUMBER));
+	set_entvar( pEnt, var_iuser4, float(containi(sModelPath,".spr") != -1 ? (engfunc(EngFunc_ModelFrames, pPrecacheId) - 1) : 0));
+	set_entvar( pEnt, var_iuser2, float(get_ad_team(id) + UNREAL_MDL_MAGIC_NUMBER));
 	set_entvar( pEnt, var_sequence, get_ad_sequence(id));
 	set_entvar( pEnt, var_framerate, get_ad_framerate(id));
 	
@@ -1808,13 +1784,13 @@ public create_one_ad(id)
 	vUserData[1] = float(get_ad_lifetime(id));
 	vUserData[2] = get_ad_rotate_speed(id);
 	
-	set_entvar( pEnt, var_vuser4, vUserData);
+	set_entvar( pEnt, var_vuser2, vUserData);
 	
 	vUserData[0] = get_ad_move_speed(id) * 10.0;
 	vUserData[1] = float(get_ad_rotatedir(id));
 	vUserData[2] = float(get_ad_movedir(id));
 	
-	set_entvar( pEnt, var_vuser2, vUserData);
+	set_entvar( pEnt, var_vuser1, vUserData);
 	vUserData[0] = float(get_ad_reversemovedir(id));
 	set_entvar( pEnt, var_vuser3, vUserData);
 	
@@ -1858,12 +1834,6 @@ public create_one_ad(id)
 		SetTouch(pEnt, "AD_TOUCH_LADDER");
 		set_entvar( pEnt, var_flags,get_entvar(pEnt, var_flags) + FL_WORLDBRUSH);
 	}
-	else if (equal(sModelType,"BSPMODEL_VEHICLE"))
-	{
-		set_entvar( pEnt, var_solid, SOLID_NOT);
-		set_entvar( pEnt, var_skin, CONTENTS_SOLID);
-		SetThinkEx( pEnt, "AD_THINK" );
-	}
 	else if (equal(sModelType,"BSPMODEL_WATER"))
 	{
 		set_entvar( pEnt, var_solid, SOLID_TRIGGER);
@@ -1877,7 +1847,7 @@ public create_one_ad(id)
 		SetThinkEx( pEnt, "AD_THINK" );
 	}
 	
-	set_entvar( pEnt, var_fuser3, float(get_entvar(pEnt,var_solid)));
+	set_entvar( pEnt, var_iuser3, float(get_entvar(pEnt,var_solid)));
 	if (get_ad_starttime(id) != 0)
 	{
 		set_entvar( pEnt, var_solid, SOLID_NOT);
@@ -1977,7 +1947,7 @@ public AD_THINK_SPRITE( const pEntTask )
 	}
 	new pEnt = pEntTask - TASK_THINK;	
 	new Float:fFrameRate = get_entvar(pEnt,var_framerate);
-	new iMaxFrames = floatround(get_entvar(pEnt,var_fuser4));
+	new iMaxFrames = get_entvar(pEnt,var_iuser4);
 	if (fFrameRate != 0.0 && iMaxFrames > 0)
 	{
 		new Float:fFrame = get_entvar(pEnt,var_frame);
@@ -1995,12 +1965,12 @@ public AD_THINK_WORKER( const pEnt )
 	new Float:vUserData[3];
 	new Float:vUserData2[3];
 	new Float:vUserData3[3];
-	get_entvar(pEnt,var_vuser4,vUserData);
+	get_entvar(pEnt,var_vuser2,vUserData);
 	
 	new iStartTime = floatround(vUserData[0]);
 	new iLifeRound = floatround(vUserData[1]);
 	
-	get_entvar(pEnt,var_vuser2,vUserData2);
+	get_entvar(pEnt,var_vuser1,vUserData2);
 	get_entvar(pEnt,var_vuser3,vUserData3);
 	
 	new iRotateDir = floatround(vUserData2[1]);
@@ -2059,7 +2029,7 @@ public AD_THINK_WORKER( const pEnt )
 		vOrigin3[1] != fMoveSpeed &&
 		vOrigin3[2] != fMoveSpeed)
 		{
-			set_entvar(pEnt,var_solid,floatround(get_entvar(pEnt,var_fuser3)));
+			set_entvar(pEnt,var_solid,get_entvar(pEnt,var_iuser3));
 			get_entvar(pEnt,var_origin,vOrigin);
 			get_entvar(pEnt,var_oldorigin,vOrigin2);
 			if (get_distance_f(vOrigin,vOrigin2) < 0.5)
@@ -2070,7 +2040,7 @@ public AD_THINK_WORKER( const pEnt )
 					magic_swap_global = 0;
 					fMoveSpeed *= -1;
 					vUserData2[0]= fMoveSpeed;
-					set_entvar(pEnt,var_vuser2,vUserData2);
+					set_entvar(pEnt,var_vuser1,vUserData2);
 					new Float:vAngles[3];
 					get_entvar(pEnt,var_angles,vAngles);
 					
@@ -2155,7 +2125,7 @@ public AD_THINK_WORKER( const pEnt )
 			if (iStartTime < get_gametime() - g_fRoundStartTime)
 			{
 				set_entvar(pEnt,var_effects, uEffFlags - EF_NODRAW);
-				set_entvar(pEnt,var_solid, floatround(get_entvar(pEnt,var_fuser3)));
+				set_entvar(pEnt,var_solid, get_entvar(pEnt,var_iuser3));
 				set_task_ex(0.2, "unstuck_all", .id = TASK_UNSTUCK);
 			}
 		}
