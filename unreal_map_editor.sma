@@ -8,7 +8,7 @@
 
 
 #define PLUGIN "Unreal Map Editor"
-#define VERSION "1.3"
+#define VERSION "1.4"
 #define AUTHOR "karaulov"
 
 #define TASK_THINK 10000
@@ -141,7 +141,13 @@ public MENU_DISABLEAD_HANDLER(id, vmenu, item)
 	
 	new data[6], iName[64], access, callback
 	menu_item_getinfo(vmenu, item, access, data, 5, iName, 63, callback)
-	     
+	     	     
+	if (equali(data,"exit"))
+	{
+		menu_destroy(vmenu)
+		return PLUGIN_HANDLED
+	}
+	
 	new key = str_to_num(data)
 	switch(key) 
 	{	
@@ -222,6 +228,15 @@ public MENU_DISABLEAD(id)
 	menu_additem(vmenu, "Переместиться к модели","2")
 	menu_additem(vmenu, "Переместить модель сюда","3")
 	
+	menu_addblank(vmenu, 1);
+	menu_addblank(vmenu, 1);
+	menu_addblank(vmenu, 1);
+	menu_addblank(vmenu, 1);
+	
+	menu_additem(vmenu, "Выход","EXIT")
+	
+	
+	menu_setprop(vmenu, MPROP_PERPAGE,0);
 	menu_setprop(vmenu, MPROP_EXITNAME, "\rВыйти из \w[\rDISABLE\w] меню")
 	menu_setprop(vmenu, MPROP_EXIT,MEXIT_ALL)
 
@@ -240,7 +255,13 @@ public MENU_TEAMVISIBLE_HANDLER(id, vmenu, item)
 	
 	new data[6], iName[64], access, callback
 	menu_item_getinfo(vmenu, item, access, data, 5, iName, 63, callback)
-	     
+	     	     
+	if (equali(data,"exit"))
+	{
+		menu_destroy(vmenu)
+		return PLUGIN_HANDLED
+	}
+	
 	new key = str_to_num(data)
 	switch(key) 
 	{	
@@ -311,7 +332,17 @@ public MENU_TEAMVISIBLE(id)
 		
 	menu_additem(vmenu, tmpmenuitem,"1")
 	
+	menu_addblank(vmenu, 1);
+	menu_addblank(vmenu, 1);
+	menu_addblank(vmenu, 1);
+	menu_addblank(vmenu, 1);
+	menu_addblank(vmenu, 1);
+	menu_addblank(vmenu, 1);
 	
+	menu_additem(vmenu, "Выход","EXIT")
+	
+	
+	menu_setprop(vmenu, MPROP_PERPAGE,0);
 	menu_setprop(vmenu, MPROP_EXITNAME, "\rВыйти из \w[\rTEAM\w] меню")
 	menu_setprop(vmenu, MPROP_EXIT,MEXIT_ALL)
 
@@ -331,7 +362,13 @@ public MENU_MOVEAD_HANDLER(id, vmenu, item)
 	
 	new data[6], iName[64], access, callback
 	menu_item_getinfo(vmenu, item, access, data, 5, iName, 63, callback)
-	     
+	     	     
+	if (equali(data,"exit"))
+	{
+		menu_destroy(vmenu)
+		return PLUGIN_HANDLED
+	}
+	
 	new key = str_to_num(data)
 	switch(key) 
 	{	
@@ -439,7 +476,14 @@ public MENU_MOVEAD(id)
 	menu_additem(vmenu, "\wДвигать [\r-1\w]","4")
 	menu_additem(vmenu, "\wДвигать [\r-10\w]","5")
 	
+		
+	menu_addblank(vmenu, 1);
+	menu_addblank(vmenu, 1);
 	
+	menu_additem(vmenu, "Выход","EXIT")
+	
+	
+	menu_setprop(vmenu, MPROP_PERPAGE,0);
 	menu_setprop(vmenu, MPROP_EXITNAME, "\rВыйти из \w[\rMOVE\w] меню")
 	menu_setprop(vmenu, MPROP_EXIT,MEXIT_ALL)
 
@@ -459,6 +503,12 @@ public MENU_FRAMERATEAD_HANDLER(id, vmenu, item)
 	new data[6], iName[64], access, callback
 	menu_item_getinfo(vmenu, item, access, data, 5, iName, 63, callback)
 	     
+	if (equali(data,"exit"))
+	{
+		menu_destroy(vmenu)
+		return PLUGIN_HANDLED
+	}
+		 
 	new key = str_to_num(data)
 	switch(key) 
 	{	
@@ -487,6 +537,13 @@ public MENU_FRAMERATEAD_HANDLER(id, vmenu, item)
 		case 5:
 		{
 			set_ad_framerate(g_iSelectedAd[id],get_ad_framerate(g_iSelectedAd[id]) - 1.0);
+			update_all_ads(id);
+			MENU_AD_MENU_SELECT(id);
+		}
+		case 6:
+		{
+			new Float:fFrameNextID = get_ad_firstframe(g_iSelectedAd[id]) + 1.0;
+			set_ad_firstframe(g_iSelectedAd[id],fFrameNextID);
 			update_all_ads(id);
 			MENU_AD_MENU_SELECT(id);
 		}
@@ -551,8 +608,17 @@ public MENU_FRAMERATEAD(id)
 	menu_additem(vmenu, "\wУвеличить [\r+1\w]","4")
 	
 	menu_additem(vmenu, "\wУменьшить [\r-1\w]","5")
-
 	
+	formatex(tmpmenuitem,charsmax(tmpmenuitem),"\w%s[\r%.0f\w]", "FIRST FRAME:", get_ad_firstframe(g_iSelectedAd[id]));
+	
+	menu_additem(vmenu, tmpmenuitem,"6")
+	
+	menu_addblank(vmenu, 1);
+	
+	menu_additem(vmenu, "Выход","EXIT")
+	
+
+	menu_setprop(vmenu, MPROP_PERPAGE,0);
 	menu_setprop(vmenu, MPROP_EXITNAME, "\rВыйти из \w[\rFPS\w] меню")
 	menu_setprop(vmenu, MPROP_EXIT,MEXIT_ALL)
 
@@ -571,7 +637,13 @@ public MENU_DELAY_START_END_AD_HANDLER(id, vmenu, item)
 	
 	new data[6], iName[64], access, callback
 	menu_item_getinfo(vmenu, item, access, data, 5, iName, 63, callback)
-	     
+	 	     
+	if (equali(data,"exit"))
+	{
+		menu_destroy(vmenu)
+		return PLUGIN_HANDLED
+	}
+    
 	new key = str_to_num(data)
 	switch(key) 
 	{	
@@ -679,8 +751,14 @@ public MENU_DELAY_START_END_AD(id)
 	menu_additem(vmenu, "\wУвеличить [\r+10\w]","4")
 	
 	menu_additem(vmenu, "\wУменьшить [\r-10\w]","5")
-
 	
+	menu_addblank(vmenu, 1);
+	menu_addblank(vmenu, 1);
+	
+	menu_additem(vmenu, "Выход","EXIT")
+	
+
+	menu_setprop(vmenu, MPROP_PERPAGE,0);
 	menu_setprop(vmenu, MPROP_EXITNAME, "\rВыйти из \w[\rTIMELIFE\w] меню")
 	menu_setprop(vmenu, MPROP_EXIT,MEXIT_ALL)
 
@@ -697,7 +775,13 @@ public MENU_DELAY_ONLINE_AD_HANDLER(id, vmenu, item)
 	
 	new data[6], iName[64], access, callback
 	menu_item_getinfo(vmenu, item, access, data, 5, iName, 63, callback)
-	     
+	     	     
+	if (equali(data,"exit"))
+	{
+		menu_destroy(vmenu)
+		return PLUGIN_HANDLED
+	}
+	
 	new key = str_to_num(data)
 	switch(key) 
 	{	
@@ -783,8 +867,16 @@ public MENU_DELAY_ONLINE_AD(id)
 	menu_additem(vmenu, "\wУвеличить [\r+1\w]","2")
 	
 	menu_additem(vmenu, "\wУменьшить [\r-1\w]","3")
-
 	
+	menu_addblank(vmenu, 1);
+	menu_addblank(vmenu, 1);
+	menu_addblank(vmenu, 1);
+	menu_addblank(vmenu, 1);
+	
+	menu_additem(vmenu, "Выход","EXIT")
+	
+
+	menu_setprop(vmenu, MPROP_PERPAGE,0);
 	menu_setprop(vmenu, MPROP_EXITNAME, "\rВыйти из \w[\rONLINE\w] меню")
 	menu_setprop(vmenu, MPROP_EXIT,MEXIT_ALL)
 
@@ -802,7 +894,13 @@ public MENU_SEQNUMAD_HANDLER(id, vmenu, item)
 	
 	new data[6], iName[64], access, callback
 	menu_item_getinfo(vmenu, item, access, data, 5, iName, 63, callback)
-	     
+	     	     
+	if (equali(data,"exit"))
+	{
+		menu_destroy(vmenu)
+		return PLUGIN_HANDLED
+	}
+	
 	new key = str_to_num(data)
 	switch(key) 
 	{	
@@ -890,8 +988,17 @@ public MENU_SEQNUMAD(id)
 	
 	menu_additem(vmenu, "\wСледующая [\r+1\w]","2")
 	menu_additem(vmenu, "\wПредыдущая [\r-1\w]","3")
-
 	
+	
+	menu_addblank(vmenu, 1);
+	menu_addblank(vmenu, 1);
+	menu_addblank(vmenu, 1);
+	menu_addblank(vmenu, 1);
+	
+	menu_additem(vmenu, "Выход","EXIT")
+	
+
+	menu_setprop(vmenu, MPROP_PERPAGE,0);
 	menu_setprop(vmenu, MPROP_EXITNAME, "\rВыйти из \w[\rSEQ\w] меню")
 	menu_setprop(vmenu, MPROP_EXIT,MEXIT_ALL)
 
@@ -909,7 +1016,13 @@ public MENU_ANGLEAD_HANDLER(id, vmenu, item)
 	
 	new data[6], iName[64], access, callback
 	menu_item_getinfo(vmenu, item, access, data, 5, iName, 63, callback)
-	     
+	     	     
+	if (equali(data,"exit"))
+	{
+		menu_destroy(vmenu)
+		return PLUGIN_HANDLED
+	}
+	
 	new key = str_to_num(data)
 	switch(key) 
 	{	
@@ -1017,7 +1130,13 @@ public MENU_ANGLEAD(id)
 	menu_additem(vmenu, "\wВращать [\r-1\w]","4")
 	menu_additem(vmenu, "\wВращать [\r-10\w]","5")
 	
+	menu_addblank(vmenu, 1);
+	menu_addblank(vmenu, 1);
 	
+	menu_additem(vmenu, "Выход","EXIT")
+	
+	
+	menu_setprop(vmenu, MPROP_PERPAGE,0);
 	menu_setprop(vmenu, MPROP_EXITNAME, "\rВыйти из \w[\rANGLE\w] меню")
 	menu_setprop(vmenu, MPROP_EXIT,MEXIT_ALL)
 
@@ -1034,7 +1153,13 @@ public MENU_ROTATEAD_SPEED_HANDLER(id, vmenu, item)
 	
 	new data[6], iName[64], access, callback
 	menu_item_getinfo(vmenu, item, access, data, 5, iName, 63, callback)
-	     
+	     	     
+	if (equali(data,"exit"))
+	{
+		menu_destroy(vmenu)
+		return PLUGIN_HANDLED
+	}
+	
 	new key = str_to_num(data)
 	switch(key) 
 	{	
@@ -1115,7 +1240,7 @@ public MENU_ROTATEAD_SPEED(id)
 	new sModelType[MAX_RES_PATH];
 	get_ad_type(g_iSelectedAd[id],sModelType,charsmax(sModelType));
 	
-	if (containi(sModelType,"bsp") != -1)
+	/*if (containi(sModelType,"bsp") != -1)
 	{
 		g_iSelectedMenu[id]++;
 		if (g_iSelectedMenu[id] < 0 || g_iSelectedMenu[id] >= UNREAL_MDL_MAX_MENUS)
@@ -1124,7 +1249,7 @@ public MENU_ROTATEAD_SPEED(id)
 		}
 		MENU_AD_MENU_SELECT(id);
 		return;
-	}
+	}*/
 	
 	new tmpmodelpath[MAX_RES_PATH];
 	get_ad_model(g_iSelectedAd[id],tmpmodelpath,charsmax(tmpmodelpath));
@@ -1158,7 +1283,13 @@ public MENU_ROTATEAD_SPEED(id)
 	menu_additem(vmenu, "\wВращать [\r-0.1\w]","4")
 	menu_additem(vmenu, "\wВращать [\r-1\w]","5")
 	
+	menu_addblank(vmenu, 1);
+	menu_addblank(vmenu, 1);
 	
+	menu_additem(vmenu, "Выход","EXIT")
+	
+	
+	menu_setprop(vmenu, MPROP_PERPAGE,0);
 	menu_setprop(vmenu, MPROP_EXITNAME, "\rВыйти из \w[\rROTATE\w] меню")
 	menu_setprop(vmenu, MPROP_EXIT,MEXIT_ALL)
 
@@ -1176,7 +1307,13 @@ public MENU_MOVEAD_SPEED_HANDLER(id, vmenu, item)
 	
 	new data[6], iName[64], access, callback
 	menu_item_getinfo(vmenu, item, access, data, 5, iName, 63, callback)
-	     
+	     	     
+	if (equali(data,"exit"))
+	{
+		menu_destroy(vmenu)
+		return PLUGIN_HANDLED
+	}
+	
 	new key = str_to_num(data)
 	switch(key) 
 	{	
@@ -1266,7 +1403,7 @@ public MENU_MOVEAD_SPEED(id)
 	new sModelType[MAX_RES_PATH];
 	get_ad_type(g_iSelectedAd[id],sModelType,charsmax(sModelType));
 	
-	if (containi(sModelType,"bsp") != -1)
+	/*if (containi(sModelType,"bsp") != -1)
 	{
 		g_iSelectedMenu[id]++;
 		if (g_iSelectedMenu[id] < 0 || g_iSelectedMenu[id] >= UNREAL_MDL_MAX_MENUS)
@@ -1275,7 +1412,7 @@ public MENU_MOVEAD_SPEED(id)
 		}
 		MENU_AD_MENU_SELECT(id);
 		return;
-	}
+	}*/
 	
 	new tmpmodelpath[MAX_RES_PATH];
 	get_ad_model(g_iSelectedAd[id],tmpmodelpath,charsmax(tmpmodelpath));
@@ -1321,7 +1458,13 @@ public MENU_MOVEAD_SPEED(id)
 	menu_additem(vmenu, "\wСкорость [\r-0.1\w]","4")
 	menu_additem(vmenu, "\wСкорость [\r-1\w]","5")
 	
+	menu_addblank(vmenu, 1);
 	
+	menu_additem(vmenu, "Выход","EXIT")
+	
+	
+	
+	menu_setprop(vmenu, MPROP_PERPAGE,0);
 	menu_setprop(vmenu, MPROP_EXITNAME, "\rВыйти из \w[\rMOVEMENT\w] меню")
 	menu_setprop(vmenu, MPROP_EXIT,MEXIT_ALL)
 
@@ -1414,7 +1557,13 @@ public MENU_CREATEAD_HANDLER(id, vmenu, item)
 	
 	new data[6], iName[64], access, callback
 	menu_item_getinfo(vmenu, item, access, data, 5, iName, 63, callback)
-	     
+	     	     
+	if (equali(data,"exit"))
+	{
+		menu_destroy(vmenu)
+		return PLUGIN_HANDLED
+	}
+	
 	new key = str_to_num(data)
 	switch(key) 
 	{	
@@ -1512,8 +1661,22 @@ public MENU_CREATEAD(id)
 			menu_additem(vmenu, tmpmenuitem,"5")
 			/*formatex(tmpmenuitem,charsmax(tmpmenuitem),"\w[\r%s\w]", "Создать BSPMODEL_WATER");
 			menu_additem(vmenu, tmpmenuitem,"7")*/
+			
+			menu_addblank(vmenu, 1);
+		}
+		else 
+		{
+			menu_addblank(vmenu, 1);
+			menu_addblank(vmenu, 1);
+			menu_addblank(vmenu, 1);
 		}
 		
+		menu_addblank(vmenu, 1);
+
+		menu_additem(vmenu, "Выход","EXIT")
+
+		
+		menu_setprop(vmenu, MPROP_PERPAGE,0);
 		menu_setprop(vmenu, MPROP_EXITNAME, "\rВыйти из UNREAL AD меню")
 		menu_setprop(vmenu, MPROP_EXIT,MEXIT_ALL)
 
@@ -1763,20 +1926,31 @@ public create_one_ad(id)
 	
 	set_entvar( pEnt, var_model, sModelPath);
 	set_entvar( pEnt, var_modelindex, pPrecacheId);
-	dllfunc( DLLFunc_Spawn, pEnt);
-	set_entvar( pEnt, var_flags,get_entvar(pEnt, var_flags) - FL_WORLDBRUSH);
+	DispatchSpawn( pEnt );
+	
+	if (get_entvar( pEnt, var_flags) & FL_WORLDBRUSH)
+		set_entvar( pEnt, var_flags,get_entvar(pEnt, var_flags) - FL_WORLDBRUSH);
 	
 	
 	new Float:vOrigin[3];
 	get_ad_origin(id,vOrigin);
+	
 	new Float:vAngles[3];
 	get_ad_angles(id,vAngles);
+	
 	set_entvar( pEnt, var_origin, vOrigin );
 	set_entvar( pEnt, var_angles, vAngles );
-	set_entvar( pEnt, var_iuser4, float(containi(sModelPath,".spr") != -1 ? (engfunc(EngFunc_ModelFrames, pPrecacheId) - 1) : 0));
-	set_entvar( pEnt, var_iuser2, float(get_ad_team(id) + UNREAL_MDL_MAGIC_NUMBER));
+	set_entvar( pEnt, var_iuser1, (containi(sModelPath,".spr") != -1 ? (engfunc(EngFunc_ModelFrames, pPrecacheId) - 1) : 0));
+	set_entvar( pEnt, var_iuser2, get_ad_team(id) + UNREAL_MDL_MAGIC_NUMBER);
 	set_entvar( pEnt, var_sequence, get_ad_sequence(id));
 	set_entvar( pEnt, var_framerate, get_ad_framerate(id));
+	
+	if (get_ad_firstframe(id) > float(get_entvar(pEnt,var_iuser1)))
+	{
+		set_ad_firstframe(id,0.0);
+	}
+	
+	set_entvar( pEnt, var_frame, get_ad_firstframe(id));
 	
 	new Float:vUserData[3]; 
 	
@@ -1793,19 +1967,26 @@ public create_one_ad(id)
 	set_entvar( pEnt, var_vuser1, vUserData);
 	vUserData[0] = float(get_ad_reversemovedir(id));
 	set_entvar( pEnt, var_vuser3, vUserData);
-	
+
 	set_entvar( pEnt, var_movetype, MOVETYPE_FLY);
-	
-	
+
 	set_entvar( pEnt, var_classname, UNREAL_MDLS_CUSTOM_CLASSNAME );
-	entity_set_origin( pEnt, vOrigin);
+	
 	SetThink( pEnt, "EMPTY_THINK" );
 	
 	if (equal(sModelType,"SPRITE"))
 	{
 		set_entvar( pEnt, var_solid, SOLID_NOT);
 		rg_set_ent_rendering(pEnt, kRenderFxNoDissipation, Float:{255.0,255.0,255.0}, kRenderTransAdd, 255.0);
-		SetThinkEx( pEnt, "AD_THINK_SPRITE" );
+		new Float:fFrameRate = get_entvar(pEnt,var_framerate);
+		if (fFrameRate > 0.01 || fFrameRate <= -0.01)
+		{
+			SetThinkEx( pEnt, "AD_THINK_SPRITE" );
+		}
+		else 
+		{
+			SetThinkEx( pEnt, "AD_THINK" );
+		}
 	}
 	else if (equal(sModelType,"MODEL_SOLID"))
 	{
@@ -1847,13 +2028,14 @@ public create_one_ad(id)
 		SetThinkEx( pEnt, "AD_THINK" );
 	}
 	
-	set_entvar( pEnt, var_iuser3, float(get_entvar(pEnt,var_solid)));
+	set_entvar( pEnt, var_iuser3, get_entvar(pEnt,var_solid) );
 	if (get_ad_starttime(id) != 0)
 	{
 		set_entvar( pEnt, var_solid, SOLID_NOT);
 		set_entvar( pEnt, var_effects, get_entvar(pEnt,var_effects) + EF_NODRAW);
 	}
 	
+	entity_set_origin( pEnt, vOrigin);
 }
 
 public EMPTY_THINK(id)
@@ -1896,7 +2078,6 @@ public set_velocity(idx)
 		new Float:vOrigin[3];
 		new Float:vOrigin2[3];
 		get_entvar(other,var_origin,vOrigin);
-		get_entvar(other,var_oldorigin,vOrigin2);
 		if (get_distance_f(vOrigin,vOrigin2) < 4.5)
 		{
 			vOrigin[2] -= 5.0;
@@ -1906,7 +2087,6 @@ public set_velocity(idx)
 			vOrigin[2] += 5.0;
 		}
 		set_entvar(other,var_origin,vOrigin);
-		set_entvar(other, var_movetype,MOVETYPE_FLY);
 	}
 }
 
@@ -1922,7 +2102,7 @@ public AD_TOUCH_LADDER(const ent, const other)
 		set_task_ex(1.0, "reset_velocity", .id = TASK_RESET_VELOCITY + other);
 		if (!task_exists(TASK_SET_VELOCITY+other))
 		{
-			set_task_ex(0.2, "set_velocity", .id = TASK_SET_VELOCITY + other,.flags = SetTask_Repeat);
+			set_task_ex(0.5, "set_velocity", .id = TASK_SET_VELOCITY + other,.flags = SetTask_Repeat);
 		}
 	}
 }
@@ -1947,8 +2127,8 @@ public AD_THINK_SPRITE( const pEntTask )
 	}
 	new pEnt = pEntTask - TASK_THINK;	
 	new Float:fFrameRate = get_entvar(pEnt,var_framerate);
-	new iMaxFrames = get_entvar(pEnt,var_iuser4);
-	if (fFrameRate != 0.0 && iMaxFrames > 0)
+	new iMaxFrames = get_entvar(pEnt,var_iuser1);
+	if (iMaxFrames > 0)
 	{
 		new Float:fFrame = get_entvar(pEnt,var_frame);
 		new Float:fIncr = fFrameRate * 0.075;
@@ -1959,7 +2139,6 @@ public AD_THINK_SPRITE( const pEntTask )
 	AD_THINK_WORKER(pEnt);
 }
 
-new magic_swap_global = 0;
 public AD_THINK_WORKER( const pEnt )
 {
 	new Float:vUserData[3];
@@ -1984,60 +2163,110 @@ public AD_THINK_WORKER( const pEnt )
 	{
 		iRotateDir--;
 		new Float:vAngles[3];
-		get_entvar(pEnt,var_angles,vAngles);
-		if (iRotateDir > 2)
+		if (!(get_entvar( pEnt, var_flags) & FL_WORLDBRUSH))
 		{
-			switch(iRotateDir)
+			get_entvar(pEnt,var_avelocity,vAngles);
+			if (iRotateDir > 2)
 			{
-				case 3:
+				switch(iRotateDir)
 				{
-					vAngles[0] += fRotateSpeed;
-					vAngles[1] += fRotateSpeed;
-				}
-				case 4:
-				{
-					vAngles[0] += fRotateSpeed;
-					vAngles[2] += fRotateSpeed;
-				}
-				case 5:
-				{
-					vAngles[1] += fRotateSpeed;
-					vAngles[2] += fRotateSpeed;
-				}
-				default:
-				{
-					vAngles[0] += fRotateSpeed;
-					vAngles[1] += fRotateSpeed;
-					vAngles[2] += fRotateSpeed;
+					case 3:
+					{
+						vAngles[0] = fRotateSpeed;
+						vAngles[1] = fRotateSpeed;
+						vAngles[2] = 0.0;
+					}
+					case 4:
+					{
+						vAngles[0] = fRotateSpeed;
+						vAngles[1] = 0.0;
+						vAngles[2] = fRotateSpeed;
+					}
+					case 5:
+					{
+						vAngles[0] = 0.0;
+						vAngles[1] = fRotateSpeed;
+						vAngles[2] = fRotateSpeed;
+					}
+					default:
+					{
+						vAngles[0] = fRotateSpeed;
+						vAngles[1] = fRotateSpeed;
+						vAngles[2] = fRotateSpeed;
+					}
 				}
 			}
+			else 
+			{
+				vAngles[0] = vAngles[1] = vAngles[1] = 0.0;
+				vAngles[iRotateDir] = fRotateSpeed;
+			}
+			
+			set_entvar(pEnt,var_avelocity,vAngles);
 		}
 		else 
-			vAngles[iRotateDir] += fRotateSpeed;
-		
-		set_entvar(pEnt,var_angles,vAngles);
+		{
+			get_entvar(pEnt,var_angles,vAngles);
+			if (iRotateDir > 2)
+			{
+				switch(iRotateDir)
+				{
+					case 3:
+					{
+						vAngles[0] += fRotateSpeed;
+						vAngles[1] += fRotateSpeed;
+					}
+					case 4:
+					{
+						vAngles[0] += fRotateSpeed;
+						vAngles[2] += fRotateSpeed;
+					}
+					case 5:
+					{
+						vAngles[1] += fRotateSpeed;
+						vAngles[2] += fRotateSpeed;
+					}
+					default:
+					{
+						vAngles[0] += fRotateSpeed;
+						vAngles[1] += fRotateSpeed;
+						vAngles[2] += fRotateSpeed;
+					}
+				}
+			}
+			else 
+				vAngles[iRotateDir] += fRotateSpeed;
+			
+			set_entvar(pEnt,var_angles,vAngles);
+		}
 	}
 	
 	if (iMoveDir > 0 && fMoveSpeed != 0.0)
 	{
 		iMoveDir--;
-		new Float:vOrigin[3];
+		
 		new Float:vOrigin2[3];
 		new Float:vOrigin3[3];
-		get_entvar(pEnt,var_velocity,vOrigin3);
-		if (iReverseMoveDir > 0 && vOrigin3[0] != fMoveSpeed &&
+		
+		if (!(get_entvar( pEnt, var_flags) & FL_WORLDBRUSH))
+			get_entvar(pEnt,var_velocity,vOrigin3);
+		else 
+			get_entvar(pEnt,var_origin,vOrigin3);
+			
+		if (!(get_entvar( pEnt, var_flags) & FL_WORLDBRUSH) && iReverseMoveDir > 0 && vOrigin3[0] != fMoveSpeed &&
 		vOrigin3[1] != fMoveSpeed &&
 		vOrigin3[2] != fMoveSpeed)
 		{
+			new Float:vOrigin[3];
 			set_entvar(pEnt,var_solid,get_entvar(pEnt,var_iuser3));
 			get_entvar(pEnt,var_origin,vOrigin);
 			get_entvar(pEnt,var_oldorigin,vOrigin2);
 			if (get_distance_f(vOrigin,vOrigin2) < 0.5)
 			{
-				magic_swap_global++;
-				if (magic_swap_global > 10)
+				new iEntTryMoveCount = get_entvar(pEnt,var_iuser4);
+				if (iEntTryMoveCount > 4)
 				{
-					magic_swap_global = 0;
+					set_entvar(pEnt,var_iuser4,0);
 					fMoveSpeed *= -1;
 					vUserData2[0]= fMoveSpeed;
 					set_entvar(pEnt,var_vuser1,vUserData2);
@@ -2079,42 +2308,93 @@ public AD_THINK_WORKER( const pEnt )
 					set_entvar(pEnt,var_angles,vAngles);
 					set_entvar(pEnt,var_solid,SOLID_NOT);
 				}
+				else 
+				{
+					set_entvar(pEnt,var_iuser4,iEntTryMoveCount + 1);
+				}
 			}
 			set_entvar(pEnt,var_oldorigin,vOrigin);
-			vOrigin[0] = vOrigin[1] = vOrigin[2] = 0.0;
 		}
-		
-		if (iMoveDir > 2)
+		if (!(get_entvar( pEnt, var_flags) & FL_WORLDBRUSH))
 		{
-			switch(iMoveDir)
+			if (iMoveDir > 2)
 			{
-				case 3:
+				switch(iMoveDir)
 				{
-					vOrigin[0] = fMoveSpeed;
-					vOrigin[1] = fMoveSpeed;
+					case 3:
+					{
+						vOrigin3[0] = fMoveSpeed;
+						vOrigin3[1] = fMoveSpeed;
+						vOrigin3[2] = 0.0;
+					}
+					case 4:
+					{
+						vOrigin3[0] = fMoveSpeed;
+						vOrigin3[1] = 0.0;
+						vOrigin3[2] = fMoveSpeed;
+					}
+					case 5:
+					{
+						vOrigin3[0] = 0.0;
+						vOrigin3[1] = fMoveSpeed;
+						vOrigin3[2] = fMoveSpeed;
+					}
+					default:
+					{
+						vOrigin3[0] = fMoveSpeed;
+						vOrigin3[1] = fMoveSpeed;
+						vOrigin3[2] = fMoveSpeed;
+					}
 				}
-				case 4:
-				{
-					vOrigin[0] = fMoveSpeed;
-					vOrigin[2] = fMoveSpeed;
-				}
-				case 5:
-				{
-					vOrigin[1] = fMoveSpeed;
-					vOrigin[2] = fMoveSpeed;
-				}
-				default:
-				{
-					vOrigin[0] = fMoveSpeed;
-					vOrigin[1] = fMoveSpeed;
-					vOrigin[2] = fMoveSpeed;
-				}
+			}
+			else 
+			{
+				vOrigin3[0] = vOrigin3[1] = vOrigin3[1] = 0.0;
+				vOrigin3[iMoveDir] = fMoveSpeed;
 			}
 		}
 		else 
-			vOrigin[iMoveDir] = fMoveSpeed;
-
-		set_entvar(pEnt,var_velocity,vOrigin);
+		{
+			if (iMoveDir > 2)
+			{
+				switch(iMoveDir)
+				{
+					case 3:
+					{
+						vOrigin3[0] += fMoveSpeed;
+						vOrigin3[1] += fMoveSpeed;
+					}
+					case 4:
+					{
+						vOrigin3[0] += fMoveSpeed;
+						vOrigin3[2] += fMoveSpeed;
+					}
+					case 5:
+					{
+						vOrigin3[1] += fMoveSpeed;
+						vOrigin3[2] += fMoveSpeed;
+					}
+					default:
+					{
+						vOrigin3[0] += fMoveSpeed;
+						vOrigin3[1] += fMoveSpeed;
+						vOrigin3[2] += fMoveSpeed;
+					}
+				}
+			}
+			else 
+			{
+				vOrigin3[iMoveDir] += fMoveSpeed;
+			}
+		}
+		
+		if (!(get_entvar( pEnt, var_flags) & FL_WORLDBRUSH))
+			set_entvar(pEnt,var_velocity,vOrigin3);
+		else 
+		{
+			set_entvar(pEnt,var_origin,vOrigin3);
+			entity_set_origin(pEnt,vOrigin3);
+		}
 	}
 	
 	if (iStartTime != 0)
@@ -2288,6 +2568,20 @@ public set_ad_framerate(id, Float:framerate)
 {
 	formatex(static_ad_framerate,charsmax(static_ad_framerate),"%d_framerate",id)
 	json_object_set_real(g_jAdsList,static_ad_framerate,framerate);
+}
+
+
+new static_ad_firstframe[64];
+public Float:get_ad_firstframe(id)
+{
+	formatex(static_ad_firstframe,charsmax(static_ad_firstframe),"%d_firstframe",id)
+	return json_object_get_real(g_jAdsList,static_ad_firstframe);
+}
+
+public set_ad_firstframe(id, Float:firstframe)
+{
+	formatex(static_ad_firstframe,charsmax(static_ad_firstframe),"%d_firstframe",id)
+	json_object_set_real(g_jAdsList,static_ad_firstframe,firstframe);
 }
 
 new static_ad_sequence[64];
@@ -2542,7 +2836,7 @@ public unstuckplayer(id)
 	}
 	else
 	{
-		engfunc(EngFunc_SetOrigin, id, Origin)	
+		entity_set_origin(id,Origin);
 		return;
 	}
 	if(is_player_stuck(id,Origin))
@@ -2551,7 +2845,7 @@ public unstuckplayer(id)
 	}
 	else
 	{
-		engfunc(EngFunc_SetOrigin, id, Origin)	
+		entity_set_origin(id,Origin);
 		return;
 	}
 	
@@ -2605,7 +2899,7 @@ public unstuckplayer(id)
 				if (is_hull_vacant(flOriginFinal, iHull))
 				{
 					i = iSpawnPoint
-					engfunc(EngFunc_SetOrigin, id, flOriginFinal)
+					entity_set_origin(id, flOriginFinal)
 					break
 				}
 				
@@ -2619,6 +2913,6 @@ public unstuckplayer(id)
 	}
 	else
 	{
-		engfunc(EngFunc_SetOrigin, id, Origin)	
+		entity_set_origin(id, Origin)	
 	}
 }
