@@ -4,16 +4,16 @@
 #include <reapi>
 #include <json>
 #include <fakemeta>
-#include <hamsandwich>
+
 #define PLUGIN "Unreal Map Editor"
-#define VERSION "1.5"
+#define VERSION "1.6"
 #define AUTHOR "karaulov"
 
 new UNREAL_MDLS_DIRECTORY[] = "models/umedit";
 new UNREAL_MDLS_CUSTOM_CLASSNAME[] = "unreal_mdl";
 
 new UNREAL_MDL_ACCESS_LEVEL = ADMIN_BAN;
-new UNREAL_MDL_MAGIC_NUMBER = 200000;
+new UNREAL_MDL_MAGIC_NUMBER = 0xBADC0DE;
 new UNREAL_MDL_MAX_MENUS = 11;
 
 #define TASK_THINK 10000
@@ -21,6 +21,7 @@ new UNREAL_MDL_MAX_MENUS = 11;
 #define TASK_UNSTUCK 2000
 #define TASK_SET_VELOCITY 4000
 #define TASK_RESET_VELOCITY 5000
+
 #define MAX_RES_PATH 64
 
 new JSON: g_jAdsList = Invalid_JSON;
@@ -2196,8 +2197,6 @@ public create_one_ad(id)
 		set_entvar(pEnt, var_solid, SOLID_BBOX);
 		set_entvar(pEnt, var_mins, Float: {-32.0, -32.0, -32.0 });
 		set_entvar(pEnt, var_maxs, Float: {32.0, 32.0, 32.0 });
-		set_entvar(pEnt, var_absmin, Float: {-32.0, -32.0, -32.0 });
-		set_entvar(pEnt, var_absmax, Float: {32.0, 32.0, 32.0 });
 		SetThinkEx(pEnt, "AD_THINK");
 	}
 	else if (equal(sModelType, "BSPMODEL_SOLID"))
