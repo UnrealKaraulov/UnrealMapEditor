@@ -41,8 +41,6 @@ public plugin_init()
 {
 	register_plugin(PLUGIN, VERSION, AUTHOR)
 
-	//https://www.gametracker.com/search/?search_by=server_variable&search_by2=unreal_ads&query=&loc=_all&sort=&order=
-	//https://gs-monitor.com/?searchType=2&variableName=unreal_ads&variableValue=&submit=&mode=
 	register_cvar("unreal_ads", VERSION, FCVAR_SERVER | FCVAR_SPONLY);
 
 	RegisterHookChain(RG_CSGameRules_RestartRound, "CSGameRules_RestartRound_Pre");
