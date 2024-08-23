@@ -1999,7 +1999,7 @@ public plugin_precache()
 		iAdNum--;
 	}
 
-	// Precache all models from directory models/unreal_mdls/global/
+	// Precache all models from directory models/umedit/global/
 	new mapPathModel[256];
 	formatex(mapPathModel, charsmax(mapPathModel), "%s/global", UNREAL_MDLS_DIRECTORY);
 	if (!dir_exists(mapPathModel))
@@ -2031,7 +2031,7 @@ public plugin_precache()
 		close_dir(handleDir);
 	}
 
-	// Precache all models from directory models/unreal_mdls/mapname/
+	// Precache all models from directory models/umedit/mapname/
 
 	formatex(mapPathModel, charsmax(mapPathModel), "%s/%s", UNREAL_MDLS_DIRECTORY, g_sMapName);
 	if (!dir_exists(mapPathModel))
